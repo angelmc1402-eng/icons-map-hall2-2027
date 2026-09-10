@@ -1,29 +1,28 @@
-/* ============================================================
-   ICONS 2027 · HALL 2 · CONFIGURACIÓN ÚNICA
-   Este es el ÚNICO archivo que tocas para cambiar precios,
-   colores, categorías o la hoja de cálculo.
-   Lo usan index.html, filters.html, builder.html y builder-sellers.html.
-   ============================================================ */
+/* ICONS 2027 · HALL 2 · configuración única.
+   La leen index.html, filters.html, builder.html y builder-sellers.html.
+   Es el único fichero que hay que tocar para precios, colores o categorías. */
 
 window.ICONS_CONFIG = {
 
-    /* --- Identidad del pabellón ------------------------------ */
-    hallName: 'HALL 2',
+    hallName:  'HALL 2',
     hallLabel: 'Pabellón 2 · TCG, Sport Cards',
-    mapImage: 'Hall 2.png',
+    mapImage:  'Hall 2.png',
 
+    /* Google Sheets como CSV. La URL de /edit NO sirve, tiene que devolver CSV:
+         compartida como lector -> .../d/ID_LIBRO/gviz/tq?tqx=out:csv&gid=NNN
+         publicada en la web    -> .../d/e/2PACX-.../pub?gid=NNN&single=true&output=csv
+       Columnas (fila 1 = cabecera, se ignora):
+         A libre · B estado (VENDIDA/SOLD = agotada) · C id de mesa · D expositor (opcional) */
     csvUrl: 'https://docs.google.com/spreadsheets/d/1b9mT5RqDehK0-28XoN2LCMg80D7Yv8uHFVDbofPK0gw/gviz/tq?tqx=out:csv&gid=672655889',
     csvRefreshMs: 120000,
 
+    /* key = prefijo del id (DIECAST-A-1) · label = lo que ve el público */
     categories: [
         { key: 'TCG',   label: 'TCG' },
         { key: 'SPORT', label: 'Sport Cards' }
     ],
 
-    /* --- Tipos de mesa --------------------------------------
-       price     = precio de tarifa (se muestra TACHADO)
-       earlyBird = descuento aplicado sobre el precio de tarifa
-    ---------------------------------------------------------- */
+    /* price = tarifa; se muestra tachada y al lado el precio con descuento */
     types: {
         collector: {
             label: 'Collector Table',
@@ -37,64 +36,42 @@ window.ICONS_CONFIG = {
         }
     },
 
-    /* --- Early bird ------------------------------------------
-       active:false  -> el tooltip muestra solo el precio de tarifa
-    ---------------------------------------------------------- */
-    earlyBird: {
-        active: true,
-        discount: 0.15,
-        label: 'EARLY BIRD −15%'
-    },
+    /* active:false -> solo se muestra la tarifa. label = solo la leyenda de filters.html */
+    earlyBird: { active: true, discount: 0.15, label: 'EARLY BIRD −15%' },
 
-    /* --- Color de mesa vendida ------------------------------ */
     soldColor: '#e11d48',
     soldLabel: 'SOLD OUT',
 
-    /* --- Lupa de la vista completa ---------------------------
-       size   = diámetro en píxeles de pantalla
-       zoom   = cuánto amplía respecto a la vista completa
-       border = grosor del aro blanco
-       enabled:false -> se desactiva y en ×1 vuelven las fichas de mesa
-    ---------------------------------------------------------- */
-    loupe: {
-        enabled: true,
-        size: 280,
-        zoom: 3,
-        border: 3
-    },
+    /* size y border en px de pantalla · zoom = aumento sobre la vista completa
+       enabled:false -> sin lupa, y en ×1 vuelven las fichas de mesa */
+    loupe: { enabled: true, size: 280, zoom: 3, border: 3 },
 
-    /* --- Tonos disponibles ---------------------------------- */
     tones: [
         { key: 'light', label: 'Claro' },
         { key: 'base',  label: 'Base' },
         { key: 'dark',  label: 'Oscuro' }
     ],
 
-    /* --- Tamaños por defecto al crear mesas (en % del plano) - */
+    /* medidas del builder, en % del plano. Mesa real de HALL 2: 86x26 px sobre 7686x5372 */
     defaults: {
-        /* medidas reales de las mesas del plano de Hall 2 (86x26 px sobre 7686x5372) */
         horizontal: { w: 1.1189, h: 0.4840 },
         vertical:   { w: 0.3383, h: 1.6194 },
         gapX: 0.04,
         gapY: 0.07,
         cloneGap: 0.30,
-        /* Hueco máximo, en píxeles del plano, para que el builder considere que
-           dos mesas son de la misma isla. Tiene que ser mayor que el hueco
-           interior de un anillo y menor que la separación entre anillos.
-           En Hall 2: hueco interior hasta ~79 px, separación entre anillos >165 px. */
+        /* hueco máximo en px del plano para que el builder considere dos mesas
+           de la misma isla: mayor que el hueco interior del anillo (~79 px) y
+           menor que la separación entre anillos (>165 px) */
         islandGapPx: 110,
-        /* el anillo típico de este pabellón: 2 arriba, 8 por lado, 2 abajo = 20 mesas */
         ring: { top: 2, side: 8, bottom: 2 }
     }
 };
 
-/* ============================================================
-   HELPERS COMPARTIDOS — no hace falta tocar nada de aquí abajo
-   ============================================================ */
+/* ---- helpers compartidos · no hace falta tocar nada de aquí abajo ---- */
 (function () {
     const C = window.ICONS_CONFIG;
 
-    /* Devuelve el color de una mesa según tipo + tono (+ color propio) */
+    /* color de una mesa: tipo + tono, o color propio si lo trae */
     C.colorFor = function (type, tone, custom) {
         if (custom) return custom;
         const t = C.types[type] || C.types.collector;
@@ -110,7 +87,7 @@ window.ICONS_CONFIG = {
         return `rgba(${r},${g},${b},${alpha})`;
     };
 
-    /* Oscurece un hex un % (0-1) para el borde */
+    /* oscurece un hex un % (0-1) */
     C.shade = function (hex, amount) {
         const h = String(hex || '#2ecc71').replace('#', '');
         const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
@@ -122,7 +99,7 @@ window.ICONS_CONFIG = {
         return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
     };
 
-    /* "DIECAST-A-1" -> "DIECAST-A"  (prefijo de isla) */
+    /* "DIECAST-A-1" -> "DIECAST-A" */
     C.groupKey = function (id) {
         id = String(id || '').trim();
         if (!id) return 'SIN-ID';
@@ -135,7 +112,7 @@ window.ICONS_CONFIG = {
         return m ? parseInt(m[1], 10) : null;
     };
 
-    /* "DIECAST-A-1" -> { cat:'DIECAST', catLabel:'Diecast', zone:'A', num:'1' } */
+    /* "DIECAST-A-1" -> { cat, catLabel, zone, num } */
     C.parseId = function (id) {
         const parts = String(id || '').split('-');
         const catKey = (parts[0] || '').toUpperCase();
@@ -148,7 +125,7 @@ window.ICONS_CONFIG = {
         };
     };
 
-    /* Precio formateado en euros españoles */
+    /* 100 -> "100,00 €" */
     C.euro = function (value) {
         return value.toLocaleString('es-ES', {
             minimumFractionDigits: 2,
@@ -156,7 +133,7 @@ window.ICONS_CONFIG = {
         }) + ' €';
     };
 
-    /* Devuelve { base:'100,00 €', early:'85,00 €'|null } */
+    /* -> { base:'100,00 €', early:'85,00 €'|null } */
     C.priceFor = function (type) {
         const t = C.types[type] || C.types.collector;
         const base = C.euro(t.price);

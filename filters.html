@@ -34,21 +34,16 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
 #stage{cursor:grab}
 #stage.dragging{cursor:grabbing}
 
-/* ---------------- MESAS ---------------- */
+/* MESAS */
 .mesa{
     position:absolute;box-sizing:border-box;
     border:1px solid rgba(0,0,0,.12);border-radius:2.5px;
-    pointer-events:auto;cursor:pointer;transform-origin:center center;
-    transition:transform .22s cubic-bezier(.2,.9,.3,1.25),
-               box-shadow .22s cubic-bezier(.2,.9,.3,1.25),
-               filter .22s ease;
+    pointer-events:auto;cursor:pointer;
+    transition:box-shadow .16s ease, filter .16s ease;
 }
 .mesa:hover,.mesa.active{
-    transform:scale(1.1);
-    box-shadow:0 0 0 1.5px #fff,
-               0 0 0 4px var(--ring, rgba(11,18,32,.3)),
-               0 8px 18px -6px rgba(11,18,32,.5);
-    filter:saturate(1.18) brightness(1.05);
+    box-shadow:0 0 9px 3px var(--ring, rgba(11,18,32,.35));
+    filter:saturate(1.35) brightness(1.02);
     z-index:30;
 }
 .mesa.active{z-index:31}
@@ -57,7 +52,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
 body.zoom-1 .mesa{pointer-events:none}
 .mesa.dim{opacity:.22;filter:grayscale(1)}
 
-/* ---------------- SELLERS ---------------- */
+/* SELLERS */
 .sponsor-zone{position:absolute;pointer-events:auto;transition:transform .18s cubic-bezier(.2,.9,.3,1.2);cursor:pointer}
 .sponsor-zone:hover{transform:scale(1.07);z-index:9000}
 .sponsor-logo-box{width:100%;height:100%;background:#fff;border-radius:7px;box-shadow:0 3px 10px rgba(11,18,32,.18);display:flex;align-items:center;justify-content:center;padding:4px;border:1.5px solid #fff;transition:border-color .18s}
@@ -70,7 +65,7 @@ body.zoom-1 .mesa{pointer-events:none}
 .layout-triple-vertical{grid-template-rows:repeat(3,minmax(0,1fr))}
 .layout-quad-vertical{grid-template-rows:repeat(4,minmax(0,1fr))}
 
-/* ---------------- TOOLTIP (overlay fijo, tamaño constante) ---------------- */
+/* TOOLTIP (overlay fijo, tamaño constante) */
 .tip{
     position:fixed;z-index:12000;left:0;top:0;
     background:var(--paper);
@@ -101,7 +96,7 @@ body.zoom-1 .mesa{pointer-events:none}
 .t-foot{padding:13px 16px 15px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
 .t-old{font-size:13px;font-weight:600;color:var(--ink-3);text-decoration:line-through;text-decoration-thickness:1.5px}
 .t-new{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.t-eb{font-size:9px;font-weight:800;letter-spacing:.08em;background:#e7f8f2;color:#0f6b52;padding:4px 8px;border-radius:999px;text-transform:uppercase}
+.t-eb{font-size:13px;font-weight:800;color:#e11d48;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
 .t-sold{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--sold)}
 .t-sold::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--sold)}
 .t-seller{padding:12px 16px 0;font-size:12px;font-weight:600;color:var(--ink-2)}
@@ -117,7 +112,7 @@ body.zoom-1 .mesa{pointer-events:none}
 .s-btn svg,.s-btn img{width:16px;height:16px;object-fit:contain;flex:none}
 .s-btn.ig:hover{border-color:#f0b3d0;color:#c02a63}
 
-/* ---------------- LUPA (solo en la vista completa) ---------------- */
+/* LUPA (solo en la vista completa) */
 #loupe{
     position:fixed;left:0;top:0;width:280px;height:280px;border-radius:50%;
     border:3px solid #fff;background:var(--bg);
@@ -135,7 +130,7 @@ body.zoom-1 .mesa{pointer-events:none}
 #loupe-inner .tip{display:none!important}
 @media(hover:none){#loupe{display:none!important}}
 
-/* ---------------- CABECERA / LEYENDA ---------------- */
+/* CABECERA / LEYENDA */
 #hud{position:fixed;top:18px;left:18px;z-index:11000;display:flex;flex-direction:column;gap:10px;max-width:280px}
 .card{background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.7);border-radius:14px;box-shadow:var(--shadow-md)}
 #brand{padding:13px 15px}
@@ -153,7 +148,7 @@ body.zoom-1 .mesa{pointer-events:none}
 #simple-link{display:inline-block;margin-top:9px;font-size:10px;font-weight:800;color:var(--ink-2);text-decoration:none;letter-spacing:.04em;border-bottom:1px solid #cfd8e3;padding-bottom:1px}
 #simple-link:hover{color:var(--ink);border-color:var(--ink)}
 
-/* ---------------- ZOOM ---------------- */
+/* ZOOM */
 #zoom{position:fixed;right:20px;bottom:20px;z-index:11000;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.7);border-radius:999px;box-shadow:var(--shadow-md)}
 .zbtn{width:32px;height:32px;border-radius:50%;border:none;background:transparent;color:var(--ink-2);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .14s,color .14s;font-family:var(--font);line-height:1}
 .zbtn:hover{background:#eef2f6;color:var(--ink)}
@@ -244,8 +239,6 @@ body.zoom-1 .mesa{pointer-events:none}
 
 <script src="config.js"></script>
 <script>
-/* Corta el arrastre nativo del navegador: es lo que provoca el cursor de
-   "prohibido" y el fantasma de la imagen al intentar mover el mapa. */
 window.addEventListener('dragstart', e => e.preventDefault());
 const C = window.ICONS_CONFIG;
 const dict = new Map();
@@ -262,7 +255,7 @@ mapImg.src = C.mapImage;
 document.getElementById('hud-title').textContent = 'ICONS 2027 · ' + C.hallName + ' · Filtros';
 document.getElementById('hud-sub').textContent = C.categories.map(c => c.label).join(' · ');
 
-/* ============================ ZOOM ============================ */
+/* ZOOM */
 const ZMAX = 8;             // 8 × la vista completa (por encima el navegador deja de rasterizar)
 let fitScale = 1, zoom = 1, tx = 0, ty = 0;
 let dragging = false, moved = false, sx = 0, sy = 0, ox = 0, oy = 0;
@@ -274,12 +267,8 @@ function scale(){ return fitScale * zoom; }
 function zoomToSlider(z){ return Math.round(1000 * Math.log(z) / Math.log(ZMAX)); }
 function sliderToZoom(v){ return Math.pow(ZMAX, v / 1000); }
 
-/* --- Escala "horneada" en el layout -------------------------------------
-   Escalar con transform una imagen de 7499 px mantiene una capa
-   compositada enorme y algunos móviles la dejan sin rasterizar (el plano
-   se ve gris al alejar). El transform solo mueve y da fluidez mientras se
-   arrastra el zoom; en cuanto para, el contenedor pasa a medir los píxeles
-   reales y el navegador rasteriza la imagen en mosaico, como una normal. */
+/* escala horneada en el layout: scale() sobre un PNG de 7500 px supera
+   el limite de rasterizado del navegador y el plano sale en gris */
 let baked = 0, bakeT = null;
 function bake(){
     const s = scale();
@@ -332,7 +321,6 @@ function setZoom(z, cx, cy, animate){
     hideTips();
 }
 
-/* hueco reservado para el panel izquierdo y la barra de zoom */
 function gutters(){
     const wide = window.innerWidth >= 1080;
     return { l: wide ? 312 : 0, r: wide ? 76 : 0, t: 0, b: wide ? 0 : 74 };
@@ -365,10 +353,9 @@ stage.addEventListener('dblclick', e => {
     setZoom(zoom < ZMAX * 0.5 ? zoom * 2.2 : 1, e.clientX, e.clientY, true);
 });
 
-/* --- arrastre --- */
+/* arrastre */
 stage.addEventListener('pointerdown', e => {
     if (e.target.closest('#tip-seller')) return;
-    /* con ratón, cancela el arrastre nativo de la imagen/selección */
     if (e.pointerType === 'mouse') e.preventDefault();
     dragging = true; moved = false;
     sx = e.clientX; sy = e.clientY; ox = tx; oy = ty;
@@ -390,7 +377,7 @@ stage.addEventListener('pointerup', e => {
 });
 stage.addEventListener('pointercancel', () => { dragging = false; stage.classList.remove('dragging'); });
 
-/* --- pinch en móvil --- */
+/* pinch en móvil */
 let pinch = null;
 stage.addEventListener('touchstart', e => {
     if (e.touches.length === 2){
@@ -420,7 +407,7 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('resize', () => { const z = zoom; fit(false); setZoom(z); });
 
-/* ============================ TOOLTIPS ============================ */
+/* TOOLTIPS */
 let tipTimer = null;
 function hideTips(){
     tipMesa.classList.remove('show');
@@ -441,7 +428,7 @@ function place(tip, rect){
     tip.style.visibility = 'visible';
 }
 
-/* ============================ MESAS ============================ */
+/* MESAS */
 function mesaTip(m){
     const info  = m.dataset.info || '';
     const type  = m.dataset.type || 'collector';
@@ -472,7 +459,7 @@ function mesaTip(m){
             ${sold
                 ? `<span class="t-sold">${C.soldLabel}</span>`
                 : (price.early
-                    ? `<span class="t-old">${price.base}</span><span class="t-new">${price.early}</span><span class="t-eb">${C.earlyBird.label}</span>`
+                    ? `<span class="t-old">${price.base}</span><span class="t-new">${price.early}</span><span class="t-eb">−${Math.round(C.earlyBird.discount*100)}%</span>`
                     : `<span class="t-new">${price.base}</span>`)}
         </div>`;
     place(tipMesa, m.getBoundingClientRect());
@@ -503,7 +490,7 @@ function paint(m){
     m.style.setProperty('--ring', C.rgba(hex, .5));
 }
 
-/* ============================ SELLERS ============================ */
+/* SELLERS */
 const IG_ICON = 'https://cdn.shopify.com/s/files/1/0772/3633/9020/files/Instagram_icon_a7c6e898-1b4b-42cf-a525-04f05aea43a2.png?v=1778103647';
 const WEB_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 4 9 15 15 0 0 1-4 9 15 15 0 0 1-4-9 15 15 0 0 1 4-9z"/></svg>';
 
@@ -543,11 +530,7 @@ async function cargarSellers(){
 
 const isTouch = window.matchMedia('(hover: none)').matches;
 const LOUPE_ON = () => zoom < 1.15;
-/* ======================= LUPA =======================
-   Vuelve el efecto del primer prototipo: en la vista completa, la lupa
-   sigue al cursor y amplía el plano para orientarse y saltar de un sitio a
-   otro. Se clona el contenido del mapa una sola vez (y se vuelve a clonar
-   cuando la hoja de cálculo cambia algo), así no hay que rasterizar nada. */
+/* LUPA */
 const loupe = document.getElementById('loupe');
 const loupeInner = document.getElementById('loupe-inner');
 const LOUPE = Object.assign({ enabled:true, size:280, zoom:3.6, border:3 }, C.loupe || {});
@@ -586,15 +569,13 @@ stage.addEventListener('pointermove', moveLoupe);
 stage.addEventListener('pointerleave', hideLoupe);
 stage.addEventListener('pointerdown', hideLoupe);
 
-/* ============================ HOJA DE CÁLCULO ============================ */
+/* HOJA DE CÁLCULO */
 function splitCSV(line){
     return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/^"|"$/g,'').replace(/""/g,'"').trim());
 }
 async function sincronizar(){
     if (!C.csvUrl) { updateLegend(); return; }
     try{
-        /* La URL puede venir pegada a mano: se le quita el #fragmento y se
-           añade el anticaché con el separador correcto. */
         const base = String(C.csvUrl).split('#')[0];
         const url = base + (base.includes('?') ? '&' : '?') + 'cache_ignore=' + Date.now();
         const r = await fetch(url, { cache:'no-cache', mode:'cors' });
@@ -627,7 +608,7 @@ async function sincronizar(){
     updateLegend();
 }
 
-/* ============================ LEYENDA + FILTRO ============================ */
+/* LEYENDA + FILTRO */
 const hidden = new Set();
 function updateLegend(){
     const rows = document.getElementById('lg-rows');
@@ -664,7 +645,7 @@ function toggleFilter(key){
     updateLegend();
 }
 
-/* ============================ BUSCADOR ============================ */
+/* BUSCADOR */
 const input = document.getElementById('search-input');
 const scount = document.getElementById('search-count');
 input.addEventListener('input', () => {
@@ -700,7 +681,7 @@ function frame(list){
     clampPan(); applyTransform(true);
 }
 
-/* ============================ ARRANQUE ============================ */
+/* ARRANQUE */
 async function boot(){
     fit(false);
     try { await cargarMesas(); } catch(e){ console.error('mesas.html:', e); }

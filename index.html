@@ -33,21 +33,16 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
 #capa-mesas,#capa-sellers{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
 #capa-sellers{z-index:40}
 
-/* ---------------- MESAS ---------------- */
+/* MESAS */
 .mesa{
     position:absolute;box-sizing:border-box;
     border:1px solid rgba(0,0,0,.12);border-radius:2.5px;
-    pointer-events:auto;cursor:pointer;transform-origin:center center;
-    transition:transform .22s cubic-bezier(.2,.9,.3,1.25),
-               box-shadow .22s cubic-bezier(.2,.9,.3,1.25),
-               filter .22s ease;
+    pointer-events:auto;cursor:pointer;
+    transition:box-shadow .16s ease, filter .16s ease;
 }
 .mesa:hover,.mesa.active{
-    transform:scale(1.1);
-    box-shadow:0 0 0 1.5px #fff,
-               0 0 0 4px var(--ring, rgba(11,18,32,.3)),
-               0 8px 18px -6px rgba(11,18,32,.5);
-    filter:saturate(1.18) brightness(1.05);
+    box-shadow:0 0 9px 3px var(--ring, rgba(11,18,32,.35));
+    filter:saturate(1.35) brightness(1.02);
     z-index:30;
 }
 .mesa.active{z-index:31}
@@ -56,7 +51,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
 body.lvl-0 .mesa{pointer-events:none}
 body.no-loupe .mesa{pointer-events:auto}
 
-/* ---------------- SELLERS ---------------- */
+/* SELLERS */
 .sponsor-zone{position:absolute;pointer-events:auto;transition:transform .18s cubic-bezier(.2,.9,.3,1.2);cursor:pointer}
 .sponsor-zone:hover{transform:scale(1.07);z-index:9000}
 .sponsor-logo-box{width:100%;height:100%;background:#fff;border-radius:7px;box-shadow:0 3px 10px rgba(11,18,32,.18);display:flex;align-items:center;justify-content:center;padding:4px;border:1.5px solid #fff;transition:border-color .18s}
@@ -69,7 +64,7 @@ body.no-loupe .mesa{pointer-events:auto}
 .layout-triple-vertical{grid-template-rows:repeat(3,minmax(0,1fr))}
 .layout-quad-vertical{grid-template-rows:repeat(4,minmax(0,1fr))}
 
-/* ---------------- TOOLTIP ---------------- */
+/* TOOLTIP */
 .tip{
     position:fixed;z-index:12000;left:0;top:0;
     background:var(--paper);border:1px solid var(--line);border-radius:14px;
@@ -97,7 +92,7 @@ body.no-loupe .mesa{pointer-events:auto}
 .t-foot{padding:13px 16px 15px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
 .t-old{font-size:13px;font-weight:600;color:var(--ink-3);text-decoration:line-through;text-decoration-thickness:1.5px}
 .t-new{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.t-eb{font-size:9px;font-weight:800;letter-spacing:.08em;background:#e7f8f2;color:#0f6b52;padding:4px 8px;border-radius:999px;text-transform:uppercase}
+.t-eb{font-size:13px;font-weight:800;color:#e11d48;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
 .t-sold{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--sold)}
 .t-sold::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--sold)}
 .t-seller{padding:12px 16px 0;font-size:12px;font-weight:600;color:var(--ink-2)}
@@ -113,7 +108,7 @@ body.no-loupe .mesa{pointer-events:auto}
 .s-btn svg,.s-btn img{width:16px;height:16px;object-fit:contain;flex:none}
 .s-btn.ig:hover{border-color:#f0b3d0;color:#c02a63}
 
-/* ---------------- LUPA (solo en la vista completa) ---------------- */
+/* LUPA (solo en la vista completa) */
 #loupe{
     position:fixed;left:0;top:0;width:280px;height:280px;border-radius:50%;
     border:3px solid #fff;background:var(--bg);
@@ -131,7 +126,7 @@ body.no-loupe .mesa{pointer-events:auto}
 #loupe-inner .tip{display:none!important}
 @media(hover:none){#loupe{display:none!important}}
 
-/* ---------------- ZOOM (4 niveles) ---------------- */
+/* ZOOM (4 niveles) */
 #zoom{
     position:fixed;bottom:24px;right:24px;z-index:11000;
     display:flex;gap:4px;padding:5px;
@@ -206,8 +201,6 @@ body.no-loupe .mesa{pointer-events:auto}
 
 <script src="config.js"></script>
 <script>
-/* Corta el arrastre nativo del navegador: es lo que provoca el cursor de
-   "prohibido" y el fantasma de la imagen al intentar mover el mapa. */
 window.addEventListener('dragstart', e => e.preventDefault());
 const C = window.ICONS_CONFIG;
 const dict = new Map();
@@ -224,11 +217,7 @@ const backBtn   = document.getElementById('back');
 mapImg.src = C.mapImage;
 const isTouch = window.matchMedia('(hover: none)').matches;
 
-/* ======================= ZOOM: 4 NIVELES =======================
-   Los multiplicadores son relativos a la vista completa. Se quedan
-   por debajo de ×9 a propósito: por encima de eso el plano (7499 px)
-   pide una capa más grande de la que el navegador puede rasterizar y
-   los móviles la dejan sin pintar (se ve gris al volver a alejar).  */
+/* ZOOM: 4 NIVELES */
 const LEVELS_DESKTOP = [1, 2.2, 4, 6];
 const LEVELS_MOBILE  = [1, 2.8, 5, 8];
 const MAX_RASTER = 15000;   // px de dispositivo que el navegador rasteriza sin fallar
@@ -240,15 +229,8 @@ let dragging = false, moved = false, sx = 0, sy = 0, ox = 0, oy = 0;
 
 function scale(){ return fitScale * LEVELS[level]; }
 
-/* --- Por qué esto no es un scale() y punto -------------------------------
-   Escalar con transform una imagen de 7499 px obliga al navegador a
-   mantener una capa compositada enorme; al alejar después de un zoom
-   fuerte, los móviles la dejan sin rasterizar y el plano se ve gris.
-   Solución: la animación sí usa transform (es fluida), pero en cuanto
-   termina se "hornea" la escala en el layout — el contenedor pasa a medir
-   los píxeles reales y el transform vuelve a ser solo un desplazamiento.
-   Así el navegador rasteriza la imagen como una imagen normal, en mosaico,
-   y no hay capa gigante que se quede en blanco.                          */
+/* escala horneada en el layout: scale() sobre un PNG de 7500 px supera
+   el limite de rasterizado del navegador y el plano sale en gris */
 function bake(){
     const s = scale();
     container.style.width  = (mapImg.naturalWidth  * s) + 'px';
@@ -294,15 +276,10 @@ function clampPan(){
 
 function fit(animate){
     const iw = mapImg.naturalWidth || 7499, ih = mapImg.naturalHeight || 5675;
-    /* En móvil vertical el plano (4:3 tumbado) en una pantalla 9:19 quedaría
-       diminuto con dos franjas vacías enormes: se ajusta al ancho y se
-       desplaza en vertical, que es como se espera de un mapa. */
     const portrait = window.innerHeight > window.innerWidth * 1.15;
     fitScale = portrait
         ? (window.innerWidth / iw) * 0.995
         : Math.min(window.innerWidth / iw, window.innerHeight / ih) * 0.98;
-    /* Recorta el nivel máximo si con esta pantalla y densidad de píxeles el
-       plano pediría más resolución de la que el navegador puede pintar. */
     const dpr = window.devicePixelRatio || 1;
     const base = window.innerWidth < 768 ? LEVELS_MOBILE : LEVELS_DESKTOP;
     const cap = MAX_RASTER / (iw * fitScale * dpr);
@@ -315,7 +292,6 @@ function fit(animate){
     else { clearTimeout(bakeT); bake(); syncUI(); }
 }
 
-/* Va al nivel n manteniendo bajo el cursor (o el centro) el mismo punto del plano */
 function setLevel(n, cx, cy){
     n = Math.max(0, Math.min(LEVELS.length - 1, n));
     if (n === level) return;
@@ -338,8 +314,6 @@ document.querySelectorAll('.zbtn').forEach(b => {
 });
 backBtn.addEventListener('click', e => { e.stopPropagation(); setLevel(0); });
 
-/* Clic en el plano: sube un nivel y vuelve al principio tras el último.
-   En móvil, tocar una mesa muestra su ficha en vez de hacer zoom. */
 stage.addEventListener('click', e => {
     if (moved || e.target.closest('a') || e.target.closest('#tip-seller')) return;
     const mesa = e.target.closest('.mesa');
@@ -361,7 +335,6 @@ stage.addEventListener('wheel', e => {
 /* Arrastre cuando hay zoom */
 stage.addEventListener('pointerdown', e => {
     if (e.target.closest('#tip-seller')) return;
-    /* con ratón, cancela el arrastre nativo de la imagen/selección */
     if (e.pointerType === 'mouse') e.preventDefault();
     moved = false;
     if (!canPan()) return;
@@ -395,15 +368,13 @@ window.addEventListener('keydown', e => {
     if (e.key === '-' || e.key === '_') setLevel(level - 1);
     if (e.key >= '1' && e.key <= '4') setLevel(+e.key - 1);
 });
-/* En móvil, mostrar u ocultar la barra de URL dispara resize: si solo cambia
-   el alto no se toca el zoom, solo se recoloca. */
 let lastW = window.innerWidth;
 window.addEventListener('resize', () => {
     if (window.innerWidth !== lastW){ lastW = window.innerWidth; fit(false); return; }
     clampPan(); setTransform(false);
 });
 
-/* ======================= TOOLTIPS ======================= */
+/* TOOLTIPS */
 let tipTimer = null;
 function hideTips(){
     tipMesa.classList.remove('show');
@@ -453,7 +424,7 @@ function showMesaTip(m){
             ${sold
                 ? `<span class="t-sold">${C.soldLabel}</span>`
                 : (price.early
-                    ? `<span class="t-old">${price.base}</span><span class="t-new">${price.early}</span><span class="t-eb">${C.earlyBird.label}</span>`
+                    ? `<span class="t-old">${price.base}</span><span class="t-new">${price.early}</span><span class="t-eb">−${Math.round(C.earlyBird.discount*100)}%</span>`
                     : `<span class="t-new">${price.base}</span>`)}
         </div>`;
     document.querySelectorAll('.mesa.active').forEach(x => x.classList.remove('active'));
@@ -461,7 +432,7 @@ function showMesaTip(m){
     place(tipMesa, m.getBoundingClientRect());
 }
 
-/* ======================= MESAS ======================= */
+/* MESAS */
 function paint(m){
     const sold = m.classList.contains('sold');
     const hex = sold ? C.soldColor : m._hex;
@@ -486,7 +457,7 @@ async function cargarMesas(){
     });
 }
 
-/* ======================= SELLERS ======================= */
+/* SELLERS */
 const IG_ICON = 'https://cdn.shopify.com/s/files/1/0772/3633/9020/files/Instagram_icon_a7c6e898-1b4b-42cf-a525-04f05aea43a2.png?v=1778103647';
 const WEB_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 4 9 15 15 0 0 1-4 9 15 15 0 0 1-4-9 15 15 0 0 1 4-9z"/></svg>';
 
@@ -527,11 +498,7 @@ async function cargarSellers(){
 }
 
 const LOUPE_ON = () => level === 0;
-/* ======================= LUPA =======================
-   Vuelve el efecto del primer prototipo: en la vista completa, la lupa
-   sigue al cursor y amplía el plano para orientarse y saltar de un sitio a
-   otro. Se clona el contenido del mapa una sola vez (y se vuelve a clonar
-   cuando la hoja de cálculo cambia algo), así no hay que rasterizar nada. */
+/* LUPA */
 const loupe = document.getElementById('loupe');
 const loupeInner = document.getElementById('loupe-inner');
 const LOUPE = Object.assign({ enabled:true, size:280, zoom:3.6, border:3 }, C.loupe || {});
@@ -570,15 +537,13 @@ stage.addEventListener('pointermove', moveLoupe);
 stage.addEventListener('pointerleave', hideLoupe);
 stage.addEventListener('pointerdown', hideLoupe);
 
-/* ======================= HOJA DE CÁLCULO ======================= */
+/* HOJA DE CÁLCULO */
 function splitCSV(line){
     return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/^"|"$/g,'').replace(/""/g,'"').trim());
 }
 async function sincronizar(){
     if (!C.csvUrl) return;
     try{
-        /* La URL puede venir pegada a mano: se le quita el #fragmento y se
-           añade el anticaché con el separador correcto. */
         const base = String(C.csvUrl).split('#')[0];
         const url = base + (base.includes('?') ? '&' : '?') + 'cache_ignore=' + Date.now();
         const r = await fetch(url, { cache:'no-cache', mode:'cors' });
@@ -608,7 +573,7 @@ async function sincronizar(){
     loupeReady = false;
 }
 
-/* ======================= ARRANQUE ======================= */
+/* ARRANQUE */
 async function boot(){
     fit(false);
     try { await cargarMesas(); } catch(e){ console.error('mesas.html:', e); }

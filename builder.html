@@ -15,7 +15,7 @@
 *{box-sizing:border-box}
 body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Inter',sans-serif}
 
-/* ---------- LIENZO ---------- */
+/* LIENZO */
 #viewport{position:absolute;inset:0;overflow:auto;cursor:grab}
 #viewport.panning{cursor:grabbing}
 #viewport.marquee-ready{cursor:crosshair}
@@ -63,7 +63,7 @@ body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
 }
 .handle.on{display:block}
 
-/* ---------- PANEL IZQUIERDO ---------- */
+/* PANEL IZQUIERDO */
 #palette{
     position:fixed;top:10px;left:10px;width:334px;max-height:calc(100vh - 20px);
     overflow-y:auto;background:var(--panel);padding:14px;border-radius:12px;
@@ -127,7 +127,7 @@ select:focus,input:focus{outline:2px solid var(--blue);outline-offset:-1px}
 
 details summary{font-size:11px;font-weight:900;cursor:pointer;color:var(--ink-2);padding:2px 0}
 
-/* ---------- PANEL DERECHO (PROPIEDADES) ---------- */
+/* PANEL DERECHO (PROPIEDADES) */
 #props{
     position:fixed;top:10px;right:10px;width:300px;max-height:calc(100vh - 20px);overflow-y:auto;
     background:var(--panel);padding:14px;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.5);
@@ -141,7 +141,7 @@ details summary{font-size:11px;font-weight:900;cursor:pointer;color:var(--ink-2)
 #sel-sub{font-size:10px;font-weight:800;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
 .val{font-size:11px;font-weight:900;color:var(--blue);font-family:monospace}
 
-/* ---------- BARRA INFERIOR ---------- */
+/* BARRA INFERIOR */
 #bar{
     position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
     display:flex;gap:8px;z-index:20000;background:rgba(15,23,42,.92);
@@ -423,19 +423,16 @@ details summary{font-size:11px;font-weight:900;cursor:pointer;color:var(--ink-2)
 
 <script src="config.js"></script>
 <script>
-/* Corta el arrastre nativo del navegador: es lo que provoca el cursor de
-   "prohibido" y el fantasma de la imagen al intentar mover el mapa. */
 window.addEventListener('dragstart', e => e.preventDefault());
 const C = window.ICONS_CONFIG;
 
-/* ===================== ESTADO ===================== */
+/* ESTADO */
 let scale = 0.15;
 let mode = 'island';
 let selection = [];          // array de elementos .mesa
 let showLabels = true;
 const undoStack = [], redoStack = [];
 const MAX_UNDO = 120;
-/* la clave sale del pabellón, así los dos mapas no se pisan el autoguardado */
 const AUTOSAVE_KEY = 'icons-' + C.hallName.toLowerCase().replace(/\s+/g,'') + '-builder-v1';
 
 const viewport = document.getElementById('viewport');
@@ -448,7 +445,7 @@ const marquee = document.getElementById('marquee');
 const handle = document.getElementById('handle');
 const picker = document.getElementById('picker');
 
-/* ===================== ARRANQUE ===================== */
+/* ARRANQUE */
 mapImg.src = C.mapImage;
 document.getElementById('hall-tag').textContent = C.hallLabel;
 document.title = `ICONS 2027 · ${C.hallName} · Tables Builder Pro`;
@@ -487,7 +484,7 @@ function init(){
     setInterval(autosave, 8000);
 }
 
-/* ===================== UTILIDADES ===================== */
+/* UTILIDADES */
 function pct(v){ return parseFloat(String(v||'').replace('%','')) || 0; }
 function f4(n){ return Number(n).toFixed(4); }
 function msg(text, kind){
@@ -499,9 +496,7 @@ function msg(text, kind){
 }
 function mesas(){ return Array.from(capa.querySelectorAll('.mesa')); }
 
-/* ---- islas físicas: mesas contiguas en el plano (union-find) ----
-   Necesario porque la numeración del plano usa la letra como COLUMNA:
-   DIECAST-A son tres islas distintas (A13-24, A25-36, A37-48).      */
+/* islas físicas: mesas contiguas en el plano (union-find) */
 let _clCache = null, _clStamp = '';
 function clusterStamp(){
     return mesas().map(m => m.dataset.info + m.style.left + m.style.top).join('|');
@@ -517,8 +512,6 @@ function clusters(){
     const parent = ms.map((_, i) => i);
     const find = a => { while (parent[a] !== a) a = parent[a] = parent[parent[a]]; return a; };
     const uni = (a, b) => { a = find(a); b = find(b); if (a !== b) parent[b] = a; };
-    /* El hueco va en píxeles del plano (config.js) y se convierte a % en cada
-       eje: 1 % de ancho y 1 % de alto no son los mismos píxeles. */
     const gapPx = (C.defaults && C.defaults.islandGapPx) || 110;
     const TOLX = gapPx / (mapImg.naturalWidth  || 7499) * 100;
     const TOLY = gapPx / (mapImg.naturalHeight || 5675) * 100;
@@ -580,7 +573,7 @@ function bbox(list){
     return {left:l, top:t, width:r-l, height:b-t, right:r, bottom:b};
 }
 
-/* ===================== PINTAR MESA ===================== */
+/* PINTAR MESA */
 function paint(el){
     const type = el.dataset.type || 'collector';
     const tone = el.dataset.tone || 'base';
@@ -631,7 +624,7 @@ function bind(el){
     });
 }
 
-/* ===================== SELECCIÓN ===================== */
+/* SELECCIÓN */
 function refreshSel(){
     mesas().forEach(m => m.classList.toggle('sel', selection.includes(m)));
     if (!selection.length){
@@ -765,7 +758,7 @@ function stats(){
     box.innerHTML = html || '<div class="stat-row"><span>Sin mesas</span><b>0</b></div>';
 }
 
-/* ===================== UNDO / REDO ===================== */
+/* UNDO / REDO */
 function serialize(){
     return mesas().sort(byId).map(m => ({
         id:m.dataset.info, type:m.dataset.type, tone:m.dataset.tone, color:m.dataset.color||'',
@@ -811,7 +804,7 @@ function updateBar(){
     document.getElementById('btn-undo').textContent = '↩ Deshacer' + (undoStack.length?` (${undoStack.length})`:'');
 }
 
-/* ===================== AUTOGUARDADO ===================== */
+/* AUTOGUARDADO */
 function autosave(){
     try { localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({t:Date.now(), data:serialize()})); } catch(e){}
 }
@@ -828,7 +821,7 @@ function restoreAuto(){
     } catch(e){ msg('No he podido restaurar la sesión.','err'); }
 }
 
-/* ===================== IMPORTAR ===================== */
+/* IMPORTAR */
 async function loadFromFile(){
     try {
         const r = await fetch('mesas.html?v=' + Date.now(), {cache:'no-store'});
@@ -877,7 +870,7 @@ function clearAll(){
     msg('Builder vacío.','ok');
 }
 
-/* ===================== CREAR ===================== */
+/* CREAR */
 function shapeChanged(){
     const s = document.getElementById('c-shape').value;
     document.getElementById('ring-fields').style.display = s==='ring' ? 'grid' : 'none';
@@ -950,7 +943,7 @@ function nextLetter(z){
     return z.replace(/([A-Z])(?!.*[A-Z])/, ch => ch === 'Z' ? 'AA' : String.fromCharCode(ch.charCodeAt(0)+1)) || 'B';
 }
 
-/* ===================== NOMBRES ===================== */
+/* NOMBRES */
 function applyName(){
     if (!selection.length) return;
     const v = document.getElementById('p-name').value.trim().toUpperCase();
@@ -989,7 +982,7 @@ function renumberAsk(){
     if (Number.isFinite(n)) renumber(n);
 }
 
-/* ===================== ASPECTO ===================== */
+/* ASPECTO */
 function applyType(){
     if (!selection.length) return;
     snap();
@@ -1018,7 +1011,7 @@ function clearColor(){
     msg('Color propio eliminado.','ok');
 }
 
-/* ===================== TAMAÑO ===================== */
+/* TAMAÑO */
 let sizeSnapped = false;
 function snapBefore(){ if (!sizeSnapped){ snap(); sizeSnapped = true; } }
 document.addEventListener('pointerup', ()=>{ sizeSnapped = false; });
@@ -1097,7 +1090,7 @@ handle.addEventListener('mousedown', e => {
     document.addEventListener('mouseup', up);
 });
 
-/* ===================== POSICIÓN ===================== */
+/* POSICIÓN */
 function applyXY(){
     if (!selection.length) return;
     const b = bbox(selection);
@@ -1155,7 +1148,7 @@ function distribute(axis){
     msg(`Distribuido (hueco ${gap.toFixed(3)} %).`,'ok');
 }
 
-/* ===================== CLONAR ===================== */
+/* CLONAR */
 function clone(dir){
     if (!selection.length) return;
     snap();
@@ -1174,8 +1167,6 @@ function clone(dir){
     const horizontal = (dir === 'left' || dir === 'right');
     const nums = selection.map(m => C.tableNumber(m.dataset.info)).filter(n => n !== null);
 
-    /* Igual que el plano: al lado = letra siguiente y mismos números;
-       arriba/abajo = misma letra y el siguiente bloque de números libre. */
     let newKey = oldKey, numShift = 0;
     if (sameKey && mode === 'island'){
         if (horizontal){
@@ -1233,7 +1224,7 @@ function freeKey(key){
     return key + '-COPIA';
 }
 
-/* ===================== BORRAR ===================== */
+/* BORRAR */
 function deleteSel(){
     if (!selection.length) return;
     if (selection.length > 1 && !confirm(`¿Eliminar ${selection.length} mesas?`)) return;
@@ -1244,7 +1235,7 @@ function deleteSel(){
     msg('Selección eliminada.','ok');
 }
 
-/* ===================== MOVER CON RATÓN ===================== */
+/* MOVER CON RATÓN */
 let moving = null;
 function mouseToPct(e){
     const r = mapImg.getBoundingClientRect();
@@ -1270,7 +1261,7 @@ document.addEventListener('mousemove', e => {
 });
 document.addEventListener('mouseup', () => { moving = null; });
 
-/* ===================== PAN + MARCO ===================== */
+/* PAN + MARCO */
 let panning = null, marking = null;
 viewport.addEventListener('mousedown', e => {
     if (e.target.closest('.mesa') || e.target === handle) return;
@@ -1330,7 +1321,7 @@ viewport.addEventListener('keydown', e => e.stopPropagation());
 document.addEventListener('keyup', e => { if (!e.shiftKey) viewport.classList.remove('marquee-ready'); });
 document.addEventListener('keydown', e => { if (e.shiftKey) viewport.classList.add('marquee-ready'); });
 
-/* ===================== ZOOM ===================== */
+/* ZOOM */
 function onWheel(e){
     e.preventDefault();
     const before = mouseToPct(e);
@@ -1376,7 +1367,6 @@ function fitView(){
 function centerOnSel(){
     const b = bbox(selection);
     if (!b) return;
-    /* la zona libre está entre el panel izquierdo (360) y el derecho (340) */
     const mr = mapImg.getBoundingClientRect();
     const vr = viewport.getBoundingClientRect();
     const freeCenterX = 360 + (viewport.clientWidth - 360 - 340)/2;
@@ -1391,7 +1381,7 @@ function toggleLabels(){
     document.getElementById('btn-labels').classList.toggle('b-dark', !showLabels);
 }
 
-/* ===================== TECLADO ===================== */
+/* TECLADO */
 document.addEventListener('keydown', e => {
     const tag = document.activeElement && document.activeElement.tagName;
     if (['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
@@ -1415,7 +1405,7 @@ document.addEventListener('keydown', e => {
 });
 window.addEventListener('resize', () => { drawHandle(); drawOutline(); });
 
-/* ===================== EXPORTAR ===================== */
+/* EXPORTAR */
 function exportLines(){
     return mesas().sort(byId).map(m => {
         const color = m.dataset.color ? ` data-color="${m.dataset.color}"` : '';
@@ -1449,7 +1439,7 @@ function download(name, text){
     URL.revokeObjectURL(url);
 }
 
-/* ===================== MODO ===================== */
+/* MODO */
 function setMode(m){
     mode = m;
     document.getElementById('m-island').classList.toggle('on', m==='island');

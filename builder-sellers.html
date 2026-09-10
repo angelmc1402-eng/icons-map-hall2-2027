@@ -221,13 +221,10 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
 
 <script src="config.js"></script>
 <script>
-/* Corta el arrastre nativo del navegador: es lo que provoca el cursor de
-   "prohibido" y el fantasma de la imagen al intentar mover el mapa. */
 window.addEventListener('dragstart', e => e.preventDefault());
 const C = window.ICONS_CONFIG;
 let scale = .15, sel = null, showMesas = false;
 const undoStack = [], redoStack = [], MAX_UNDO = 100;
-/* la clave sale del pabellón, así los dos mapas no se pisan el autoguardado */
 const AUTOSAVE_KEY = 'icons-' + C.hallName.toLowerCase().replace(/\s+/g,'') + '-sellers-v1';
 
 const viewport = document.getElementById('viewport');
@@ -253,7 +250,7 @@ function init(){
     setInterval(autosave, 8000);
 }
 
-/* ---------- utilidades ---------- */
+/* utilidades */
 function pct(v){ return parseFloat(String(v||'').replace('%','')) || 0; }
 function f4(n){ return Number(n).toFixed(4); }
 function zones(){ return Array.from(capa.querySelectorAll('.zone')); }
@@ -297,7 +294,7 @@ function makeZone(o){
     return z;
 }
 
-/* ---------- selección ---------- */
+/* selección */
 function select(z){
     sel = z;
     zones().forEach(x => x.classList.toggle('sel', x === z));
@@ -358,7 +355,7 @@ function pickIndex(i){
     viewport.scrollTo({left:Math.max(0,x-fx), top:Math.max(0,y-fy), behavior:'smooth'});
 }
 
-/* ---------- undo ---------- */
+/* undo */
 function serialize(){
     return zones().map(z => ({
         name:z.dataset.name, logo:z.dataset.logo, ig:z.dataset.ig, web:z.dataset.web,
@@ -405,7 +402,7 @@ function restoreAuto(){
     }catch(e){ msg('No he podido restaurar.','err'); }
 }
 
-/* ---------- importar ---------- */
+/* importar */
 async function loadFromFile(){
     try{
         const r = await fetch('seller.html?v='+Date.now(), {cache:'no-store'});
@@ -440,7 +437,7 @@ function clearAll(){
     snap(); capa.innerHTML=''; select(null); msg('Vacío.','ok');
 }
 
-/* ---------- mesas de referencia ---------- */
+/* mesas de referencia */
 async function loadMesasRef(){
     try{
         const r = await fetch('mesas.html?v='+Date.now(), {cache:'no-store'});
@@ -463,7 +460,7 @@ function showMesasToggle(){
     document.getElementById('btn-mesas').classList.toggle('b-dark', showMesas);
 }
 
-/* ---------- crear ---------- */
+/* crear */
 function spawn(){
     const vr = viewport.getBoundingClientRect(), mr = mapImg.getBoundingClientRect();
     const cx = ((vr.left+vr.width/2-mr.left)/mr.width)*100;
@@ -500,7 +497,7 @@ function del(){
     snap(); sel.remove(); select(null); msg('Eliminado.','ok');
 }
 
-/* ---------- edición ---------- */
+/* edición */
 let liveT = null;
 function live(field, value){
     if (!sel) return;
@@ -574,7 +571,7 @@ function nudge(dx,dy){
     syncPos(); drawHandle(); refreshList();
 }
 
-/* ---------- arrastrar ---------- */
+/* arrastrar */
 function mouseToPct(e){
     const r = mapImg.getBoundingClientRect();
     return {x:((e.clientX-r.left)/r.width)*100, y:((e.clientY-r.top)/r.height)*100};
@@ -609,7 +606,7 @@ handle.addEventListener('mousedown', e => {
     document.addEventListener('mouseup', up);
 });
 
-/* ---------- pan y zoom ---------- */
+/* pan y zoom */
 let panning = null;
 viewport.addEventListener('mousedown', e => {
     if (e.target.closest('.zone') || e.target === handle) return;
@@ -662,7 +659,7 @@ function fitView(){
     applyScale();
 }
 
-/* ---------- teclado ---------- */
+/* teclado */
 document.addEventListener('keydown', e => {
     const tag = document.activeElement && document.activeElement.tagName;
     if (['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
@@ -684,7 +681,7 @@ document.addEventListener('keydown', e => {
     }
 });
 
-/* ---------- exportar ---------- */
+/* exportar */
 function exportLines(){
     return zones().map(z => {
         const layout = z.dataset.logoLayout && z.dataset.logoLayout !== 'single'
