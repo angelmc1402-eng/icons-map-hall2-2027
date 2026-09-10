@@ -13,6 +13,8 @@ body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
 #viewport.panning{cursor:grabbing}
 #container{position:relative;transform-origin:0 0;display:inline-block;margin:24px 330px 130px 350px}
 #map-img{display:block;max-width:none;pointer-events:none;user-select:none;-webkit-user-drag:none;image-rendering:high-quality}
+#stage,#container,#map-img,.mesa,.sponsor-zone,.sponsor-logo-box img,.zona{-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:none}
+#stage{user-select:none;-webkit-user-select:none}
 #capa{position:absolute;inset:0;pointer-events:none}
 
 .zone{
@@ -208,7 +210,7 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
 
 <div id="viewport">
     <div id="container">
-        <img id="map-img" alt="Plano">
+        <img draggable="false" id="map-img" alt="Plano">
         <div id="capa-mesas-ref" style="position:absolute;inset:0;pointer-events:none;display:none"></div>
         <div id="capa"></div>
         <div class="handle" id="handle"></div>
@@ -219,6 +221,9 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
 
 <script src="config.js"></script>
 <script>
+/* Corta el arrastre nativo del navegador: es lo que provoca el cursor de
+   "prohibido" y el fantasma de la imagen al intentar mover el mapa. */
+window.addEventListener('dragstart', e => e.preventDefault());
 const C = window.ICONS_CONFIG;
 let scale = .15, sel = null, showMesas = false;
 const undoStack = [], redoStack = [], MAX_UNDO = 100;
@@ -269,7 +274,7 @@ function render(z){
     const name = z.dataset.name || 'Sin nombre';
     const cls = layout === 'single' ? 'inner' : `inner multi lay-${layout}`;
     z.innerHTML = logo
-        ? `<div class="${cls}">${Array.from({length:n},()=>`<img src="${esc(logo)}" alt="">`).join('')}</div>`
+        ? `<div class="${cls}">${Array.from({length:n},()=>`<img draggable="false" src="${esc(logo)}" alt="">`).join('')}</div>`
         : `<div class="inner"><span class="ph">${esc(name)}</span></div>`;
 }
 

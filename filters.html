@@ -26,6 +26,8 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
 #container{position:absolute;top:0;left:0;transform-origin:0 0}
 #container.animate{transition:transform .34s cubic-bezier(.22,1,.36,1)}
 #map-img{display:block;width:100%;height:100%;max-width:none;user-select:none;-webkit-user-drag:none}
+#stage,#container,#map-img,.mesa,.sponsor-zone,.sponsor-logo-box img,.zona{-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:none}
+#stage{user-select:none;-webkit-user-select:none}
 #capa-mesas,#capa-sellers{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
 #capa-sellers{z-index:40}
 
@@ -199,7 +201,7 @@ body.zoom-1 .mesa{pointer-events:none}
 
 <div id="stage">
     <div id="container">
-        <img id="map-img" alt="Hall 1 Floor Plan">
+        <img draggable="false" id="map-img" alt="Hall 1 Floor Plan">
         <div id="capa-mesas"></div>
         <div id="capa-sellers"></div>
     </div>
@@ -242,6 +244,9 @@ body.zoom-1 .mesa{pointer-events:none}
 
 <script src="config.js"></script>
 <script>
+/* Corta el arrastre nativo del navegador: es lo que provoca el cursor de
+   "prohibido" y el fantasma de la imagen al intentar mover el mapa. */
+window.addEventListener('dragstart', e => e.preventDefault());
 const C = window.ICONS_CONFIG;
 const dict = new Map();
 
@@ -363,6 +368,8 @@ stage.addEventListener('dblclick', e => {
 /* --- arrastre --- */
 stage.addEventListener('pointerdown', e => {
     if (e.target.closest('#tip-seller')) return;
+    /* con ratón, cancela el arrastre nativo de la imagen/selección */
+    if (e.pointerType === 'mouse') e.preventDefault();
     dragging = true; moved = false;
     sx = e.clientX; sy = e.clientY; ox = tx; oy = ty;
     stage.classList.add('dragging');
@@ -507,7 +514,7 @@ function sellerTip(sp){
         <div class="s-tag">Exhibitor</div>
         <div class="s-name">${name}</div>
         <div class="s-links">
-            ${ig  ? `<a class="s-btn ig" href="${ig}" target="_blank" rel="noopener"><img src="${IG_ICON}" alt=""> Instagram</a>` : ''}
+            ${ig  ? `<a class="s-btn ig" href="${ig}" target="_blank" rel="noopener"><img draggable="false" src="${IG_ICON}" alt=""> Instagram</a>` : ''}
             ${web ? `<a class="s-btn" href="${web}" target="_blank" rel="noopener">${WEB_ICON} Visit website</a>` : ''}
         </div>`;
     place(tipSeller, sp.getBoundingClientRect());
@@ -525,7 +532,7 @@ async function cargarSellers(){
         const layout = counts[req] ? req : 'single';
         const cls = layout === 'single' ? 'sponsor-logo-box' : `sponsor-logo-box multi-logo layout-${layout}`;
         sp.innerHTML = `<div class="${cls}">${
-            logo ? Array.from({length:counts[layout]}, () => `<img src="${logo}" alt="${name}">`).join('')
+            logo ? Array.from({length:counts[layout]}, () => `<img draggable="false" src="${logo}" alt="${name}">`).join('')
                  : `<span style="font-size:9px;font-weight:800;color:#334155">${name}</span>`}</div>`;
         sp.addEventListener('pointerenter', () => { clearTimeout(tipTimer); if (!dragging) sellerTip(sp); });
         sp.addEventListener('pointerleave', () => { tipTimer = setTimeout(() => tipSeller.classList.remove('show'), 260); });
