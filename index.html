@@ -34,13 +34,24 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
 /* ---------------- MESAS ---------------- */
 .mesa{
     position:absolute;box-sizing:border-box;
-    border:1px solid rgba(0,0,0,.12);border-radius:2px;
-    pointer-events:auto;cursor:pointer;
-    transition:filter .12s ease, box-shadow .12s ease;
+    border:1px solid rgba(0,0,0,.12);border-radius:2.5px;
+    pointer-events:auto;cursor:pointer;transform-origin:center center;
+    transition:transform .22s cubic-bezier(.2,.9,.3,1.25),
+               box-shadow .22s cubic-bezier(.2,.9,.3,1.25),
+               filter .22s ease;
 }
-.mesa:hover{filter:saturate(1.5) brightness(1.08);box-shadow:0 0 0 1.5px #fff, 0 0 0 3px rgba(11,18,32,.55);z-index:30}
-.mesa.active{filter:saturate(1.5) brightness(1.08);box-shadow:0 0 0 1.5px #fff, 0 0 0 3px rgba(11,18,32,.55);z-index:31}
+.mesa:hover,.mesa.active{
+    transform:scale(1.1);
+    box-shadow:0 0 0 1.5px #fff,
+               0 0 0 4px var(--ring, rgba(11,18,32,.3)),
+               0 8px 18px -6px rgba(11,18,32,.5);
+    filter:saturate(1.18) brightness(1.05);
+    z-index:30;
+}
+.mesa.active{z-index:31}
 .mesa.sold{cursor:default}
+/* en la vista completa manda la lupa, no las fichas */
+body.lvl-0 .mesa{pointer-events:none}
 
 /* ---------------- SELLERS ---------------- */
 .sponsor-zone{position:absolute;pointer-events:auto;transition:transform .18s cubic-bezier(.2,.9,.3,1.2);cursor:pointer}
@@ -98,6 +109,24 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
 .s-btn:hover{background:#fff;border-color:#cfd8e3;transform:translateY(-1px);box-shadow:var(--shadow-md)}
 .s-btn svg,.s-btn img{width:16px;height:16px;object-fit:contain;flex:none}
 .s-btn.ig:hover{border-color:#f0b3d0;color:#c02a63}
+
+/* ---------------- LUPA (solo en la vista completa) ---------------- */
+#loupe{
+    position:fixed;left:0;top:0;width:280px;height:280px;border-radius:50%;
+    border:3px solid #fff;background:var(--bg);
+    box-shadow:0 20px 45px -12px rgba(11,18,32,.5), 0 0 0 1px rgba(11,18,32,.08);
+    overflow:hidden;pointer-events:none;z-index:11500;
+    opacity:0;transform:scale(.82);
+    transition:opacity .2s ease, transform .26s cubic-bezier(.2,.9,.3,1.3);
+}
+#loupe.on{opacity:1;transform:scale(1)}
+#loupe::after{
+    content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none;
+    box-shadow:inset 0 0 26px rgba(11,18,32,.13);
+}
+#loupe-inner{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none}
+#loupe-inner .tip{display:none!important}
+@media(hover:none){#loupe{display:none!important}}
 
 /* ---------------- ZOOM (4 niveles) ---------------- */
 #zoom{
@@ -167,6 +196,8 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
     <button class="zbtn" data-lvl="3">×4</button>
 </div>
 
+<div id="loupe"><div id="loupe-inner"></div></div>
+
 <div class="tip" id="tip-mesa"></div>
 <div class="tip" id="tip-seller"></div>
 
@@ -235,6 +266,7 @@ function canPan(){
         || (mapImg.naturalHeight * scale() > window.innerHeight + 1);
 }
 function syncUI(){
+    document.body.className = 'lvl-' + level;
     stage.classList.toggle('zoomed', canPan());
     backBtn.classList.toggle('on', level > 0);
     document.querySelectorAll('.zbtn').forEach(b => b.classList.toggle('on', +b.dataset.lvl === level));
@@ -242,6 +274,7 @@ function syncUI(){
 function applyTransform(animate){
     setTransform(animate);
     syncUI();
+    if (typeof hideLoupe === 'function') hideLoupe();
     bakeSoon(animate ? 420 : 0);
 }
 
@@ -426,6 +459,7 @@ function paint(m){
     const hex = sold ? C.soldColor : m._hex;
     m.style.backgroundColor = C.rgba(hex, sold ? .46 : .34);
     m.style.borderColor = C.rgba(C.shade(hex,.3), .75);
+    m.style.setProperty('--ring', C.rgba(hex, .5));
 }
 async function cargarMesas(){
     const resp = await fetch('mesas.html?v=' + Date.now(), { cache:'no-store' });
@@ -484,6 +518,46 @@ async function cargarSellers(){
     tipSeller.addEventListener('pointerleave', () => { if (!isTouch) tipSeller.classList.remove('show'); });
 }
 
+const LOUPE_ON = () => level === 0;
+/* ======================= LUPA =======================
+   Vuelve el efecto del primer prototipo: en la vista completa, la lupa
+   sigue al cursor y amplía el plano para orientarse y saltar de un sitio a
+   otro. Se clona el contenido del mapa una sola vez (y se vuelve a clonar
+   cuando la hoja de cálculo cambia algo), así no hay que rasterizar nada. */
+const loupe = document.getElementById('loupe');
+const loupeInner = document.getElementById('loupe-inner');
+const LOUPE_SIZE = 280, LOUPE_BORDER = 3, LOUPE_ZOOM = 3.6;
+const LOUPE_C = (LOUPE_SIZE - LOUPE_BORDER * 2) / 2;   // centro de la caja interior
+let loupeReady = false;
+
+function buildLoupe(){
+    loupeInner.innerHTML = container.innerHTML;
+    loupeInner.querySelectorAll('.tip').forEach(n => n.remove());
+    loupeInner.style.width  = mapImg.naturalWidth + 'px';
+    loupeInner.style.height = mapImg.naturalHeight + 'px';
+    loupeReady = true;
+}
+function hideLoupe(){ loupe.classList.remove('on'); }
+function moveLoupe(e){
+    if (isTouch || e.pointerType === 'touch' || dragging || !LOUPE_ON()) return hideLoupe();
+    if (e.target.closest('.sponsor-zone') || e.target.closest('#tip-seller')) return hideLoupe();
+    const r = container.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return hideLoupe();
+    if (!loupeReady) buildLoupe();
+    const z = fitScale * LOUPE_ZOOM;
+    const px = (e.clientX - r.left) / r.width  * mapImg.naturalWidth;
+    const py = (e.clientY - r.top)  / r.height * mapImg.naturalHeight;
+    loupeInner.style.transform = `scale(${z})`;
+    loupeInner.style.left = (LOUPE_C - px * z) + 'px';
+    loupeInner.style.top  = (LOUPE_C - py * z) + 'px';
+    loupe.style.left = (e.clientX - LOUPE_SIZE/2) + 'px';
+    loupe.style.top  = (e.clientY - LOUPE_SIZE/2) + 'px';
+    loupe.classList.add('on');
+}
+stage.addEventListener('pointermove', moveLoupe);
+stage.addEventListener('pointerleave', hideLoupe);
+stage.addEventListener('pointerdown', hideLoupe);
+
 /* ======================= HOJA DE CÁLCULO ======================= */
 function splitCSV(line){
     return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/^"|"$/g,'').replace(/""/g,'"').trim());
@@ -508,6 +582,7 @@ async function sincronizar(){
         });
         dict.forEach((m,id) => { if (!seen.has(id) && m.classList.contains('sold')){ m.classList.remove('sold'); paint(m); } });
     }catch(err){ console.warn('CSV sync:', err.message); }
+    loupeReady = false;
 }
 
 /* ======================= ARRANQUE ======================= */
@@ -515,6 +590,7 @@ async function boot(){
     fit(false);
     try { await cargarMesas(); } catch(e){ console.error('mesas.html:', e); }
     try { await cargarSellers(); } catch(e){ console.warn('seller.html:', e); }
+    loupeReady = false;
     sincronizar();
     setInterval(sincronizar, C.csvRefreshMs);
     const ld = document.getElementById('loader');

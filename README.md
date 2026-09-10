@@ -10,7 +10,7 @@ estructura y el mismo código: lo único que cambia entre los dos es `config.js`
 
 | Fichero | Para qué sirve |
 |---|---|
-| `index.html` | **El mapa público**, limpio: solo el plano, las fichas de mesa y 4 niveles de zoom. Es lo que se publica, lo que se embebe en un listing y lo que se ve en móvil. |
+| `index.html` | **El mapa público**, limpio: solo el plano, la lupa, las fichas de mesa y 4 niveles de zoom. Es lo que se publica, lo que se embebe en un listing y lo que se ve en móvil. |
 | `filters.html` | La versión con herramientas: leyenda con recuento y filtros, buscador de mesas y zoom continuo con deslizador. Para uso interno o para quien quiera hurgar. |
 | `config.js` | **El único fichero que tocas** para precios, colores, categorías y la URL de la hoja de cálculo. Lo leen los cuatro HTML. |
 | `mesas.html` | Las mesas. Lo genera el builder. **Ya viene relleno con las 412 mesas del plano.** |
@@ -195,10 +195,15 @@ Columnas (la fila 1 es cabecera y se ignora):
 
 | Columna | Contenido |
 |---|---|
-| A | libre (notas, referencia de pedido…) |
+| A | libre (nombre de la mesa, notas, referencia de pedido…) |
 | B | **estado** — si contiene `VENDIDA` o `SOLD`, la mesa sale roja y con `SOLD OUT` |
 | C | **ID de mesa** — tiene que coincidir exactamente con `data-info` (`TCG-A-1`) |
-| D | *(opcional)* nombre del expositor, y sale en el tooltip de la mesa |
+| D | *(opcional)* nombre del expositor, y sale en la ficha de la mesa |
+| E en adelante | libre, el mapa las ignora |
+
+En el libro `mapa mesas.xlsx` la hoja **2027** ya viene en este formato con las 748 mesas de los dos
+pabellones (336 + 412), todas en `Disponible`, con validación de datos en la columna Estado y color
+automático según el estado.
 
 La columna D es nueva: si la rellenas, el tooltip muestra el nombre del expositor sin tener que tocar
 `seller.html`. Si la dejas vacía no aparece nada.
@@ -221,7 +226,12 @@ Todo eso vive en `filters.html`.
 - **4 niveles de zoom** con la botonera `×1 ×2 ×3 ×4` abajo a la derecha (centrada en móvil), botón
   **BACK** para volver a la vista completa, clic en el plano para subir un nivel (y volver al principio
   tras el último), rueda del ratón, y teclas `1`-`4`, `+`, `−` y `Esc`. Con zoom se arrastra para moverse.
-- **Ficha de mesa** al pasar por encima en escritorio y **al tocarla en móvil**: tarjeta blanca con una
+- **Lupa en la vista completa**: en escritorio, con el zoom en ×1 la lupa sigue al cursor y amplía el plano
+  ×3,6 para orientarse y saltar de un sitio a otro. Al subir de nivel desaparece. En ×1 no salen fichas de
+  mesa: manda la lupa. En móvil no aparece (no hay cursor).
+- **Hover de mesa**: la mesa crece un 10 % con un aro blanco y un halo del color de su tipo. Nada de
+  parpadeos: una curva suave de 220 ms.
+- **Ficha de mesa** al pasar por encima en escritorio (de ×2 en adelante) y **al tocarla en móvil**: tarjeta blanca con una
   línea del color del tipo arriba, el ID grande (`A45`), la etiqueta del tipo, categoría / zona / mesa y el
   precio con la tarifa tachada más el early bird. Es un overlay de tamaño fijo, así que se lee igual de
   bien en la vista completa que en el nivel más cercano.
