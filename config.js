@@ -22,7 +22,7 @@ window.ICONS_CONFIG = {
        puedes usar UNA sola hoja para los dos mapas o una pestaña por pabellón.
          col D = (opcional) nombre del vendedor que se muestra en el tooltip
     ---------------------------------------------------------- */
-    csvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv',
+    csvUrl: 'https://docs.google.com/spreadsheets/d/1b9mT5RqDehK0-28XoN2LCMg80D7Yv8uHFVDbofPK0gw/edit?gid=672655889#gid=672655889&single=true&output=csv',
     csvRefreshMs: 120000,
 
     /* --- Categorías del pabellón -----------------------------
