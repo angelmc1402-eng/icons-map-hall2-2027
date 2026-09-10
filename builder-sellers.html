@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICONS 2027 · Hall 2 · Sellers Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#111827;--panel:#fff;--line:#e2e8f0;--soft:#f8fafc;--ink:#0f172a;--ink-2:#475569;--ink-3:#94a3b8;--purple:#8b5cf6;--cyan:#00d2d3;--green:#2ecc71;--blue:#3b82f6;--red:#ff5a5f;--orange:#ff9f43}
+*{box-sizing:border-box}
+body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Inter',sans-serif}
+#viewport{position:absolute;inset:0;overflow:auto;cursor:grab}
+#viewport.panning{cursor:grabbing}
+#container{position:relative;transform-origin:0 0;display:inline-block;margin:24px 330px 130px 350px}
+#map-img{display:block;max-width:none;pointer-events:none;user-select:none;-webkit-user-drag:none;image-rendering:high-quality}
+#capa{position:absolute;inset:0;pointer-events:none}
+
+.zone{
+    position:absolute;pointer-events:auto;cursor:move;box-sizing:border-box;
+    border:2px dashed var(--purple);background:rgba(139,92,246,.16);border-radius:6px;
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.zone.sel{border-style:solid;border-color:var(--orange);background:rgba(255,159,67,.24);box-shadow:0 0 0 1.5px #0f172a,0 0 16px rgba(255,159,67,.9);z-index:500}
+.zone .inner{width:100%;height:100%;background:#fff;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:3px;pointer-events:none}
+.zone .inner.multi{display:grid;gap:2px}
+.zone .inner img{width:100%;height:100%;object-fit:contain;min-width:0;min-height:0}
+.zone .ph{font-size:9px;font-weight:900;color:#64748b;text-align:center;line-height:1.15;padding:2px}
+.lay-dual-horizontal{grid-template-columns:repeat(2,minmax(0,1fr))}
+.lay-dual-vertical{grid-template-rows:repeat(2,minmax(0,1fr))}
+.lay-triple-vertical{grid-template-rows:repeat(3,minmax(0,1fr))}
+.lay-quad-vertical{grid-template-rows:repeat(4,minmax(0,1fr))}
+.handle{position:absolute;width:11px;height:11px;background:#fff;border:2px solid var(--orange);border-radius:2px;z-index:900;display:none;pointer-events:auto;cursor:nwse-resize;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.handle.on{display:block}
+
+#panel{position:fixed;top:10px;left:10px;width:330px;max-height:calc(100vh - 20px);overflow-y:auto;background:var(--panel);padding:14px;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.5);z-index:20000;display:flex;flex-direction:column;gap:11px}
+#panel::-webkit-scrollbar{width:8px}#panel::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:8px}
+.hd{border-bottom:2px solid var(--line);padding-bottom:9px}
+.hd h3{margin:0;font-size:14px;font-weight:900;color:var(--ink)}
+.hd small{font-size:9px;font-weight:800;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em}
+.box{background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:11px}
+.box-title{font-size:10px;font-weight:900;color:var(--ink-2);margin-bottom:9px;text-transform:uppercase;letter-spacing:.06em}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+label{font-size:9px;font-weight:900;color:#64748b;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
+input,select,textarea{width:100%;padding:6px 7px;border:1px solid #cbd5e1;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;background:#fff;color:var(--ink)}
+input[type=range]{padding:0;border:none;background:transparent;accent-color:var(--blue)}
+textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
+.btn{width:100%;padding:8px;border:none;border-radius:7px;font-weight:900;font-size:11px;cursor:pointer;transition:transform .12s,filter .12s;font-family:'Inter',sans-serif}
+.btn:hover{transform:translateY(-1px);filter:brightness(.95)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.b-blue{background:var(--blue);color:#fff}.b-green{background:var(--green);color:#fff}
+.b-dark{background:var(--ink);color:var(--cyan)}.b-purple{background:var(--purple);color:#fff}
+.b-red{background:var(--red);color:#fff}.b-light{background:#e2e8f0;color:var(--ink)}
+.b-xs{padding:6px 4px;font-size:10px}
+.note{font-size:10px;color:#64748b;line-height:1.5;margin-top:6px}
+.kbd{font-size:10px;color:#475569;line-height:1.7;background:#f1f5f9;padding:9px;border-radius:7px;border:1px solid var(--line)}
+.kbd b{color:var(--ink)}
+.msg{padding:8px;border-radius:7px;font-size:11px;font-weight:700;display:none;margin-top:7px}
+.msg.err{background:#fff1f2;color:#9f1239;border:1px solid #fecdd3;display:block}
+.msg.ok{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;display:block}
+.val{font-size:11px;font-weight:900;color:var(--blue);font-family:monospace}
+#props{position:fixed;top:10px;right:10px;width:300px;max-height:calc(100vh - 20px);overflow-y:auto;background:var(--panel);padding:14px;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.5);z-index:20000;display:none;flex-direction:column;gap:11px}
+#props.on{display:flex}
+#props::-webkit-scrollbar{width:8px}#props::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:8px}
+#bar{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:20000;background:rgba(15,23,42,.92);padding:8px;border-radius:999px;box-shadow:0 14px 34px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08)}
+#bar .btn{width:auto;padding:9px 16px;border-radius:999px}
+#zoom-tag{align-self:center;color:#94a3b8;font-size:10px;font-weight:900;padding:0 8px;font-family:monospace;min-width:48px;text-align:center}
+#bar #zoom-range{width:128px;align-self:center;height:4px;padding:0;border:none;border-radius:99px;background:#334155;cursor:pointer;-webkit-appearance:none;appearance:none}
+#bar #zoom-range::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;border:2.5px solid #00d2d3;cursor:grab}
+#bar #zoom-range::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;border:2.5px solid #00d2d3;cursor:grab}
+#clip{position:absolute;left:-9999px;top:-9999px}
+.list{max-height:180px;overflow-y:auto;border:1px solid var(--line);border-radius:7px;background:#fff}
+.list-item{padding:6px 8px;font-size:11px;font-weight:800;color:var(--ink-2);border-bottom:1px solid #f1f5f9;cursor:pointer;display:flex;justify-content:space-between;gap:6px}
+.list-item:hover{background:#f1f5f9}
+.list-item.on{background:#ede9fe;color:#5b21b6}
+.list-item span:last-child{color:var(--ink-3);font-family:monospace;font-size:10px}
+</style>
+</head>
+<body>
+
+<div id="panel">
+    <div class="hd">
+        <h3>Sellers Builder</h3>
+        <small id="hall-tag">Hall 2</small>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Cargar / guardar</div>
+        <div class="g2">
+            <button class="btn b-blue" onclick="loadFromFile()">Cargar seller.html</button>
+            <button class="btn b-light" onclick="restoreAuto()">Restaurar sesión</button>
+        </div>
+        <div class="g2" style="margin-top:7px">
+            <button class="btn b-light" onclick="clearAll()">Vaciar todo</button>
+            <button class="btn b-light" onclick="showMesasToggle()" id="btn-mesas">Ver mesas</button>
+        </div>
+        <details style="margin-top:9px">
+            <summary style="font-size:11px;font-weight:900;cursor:pointer;color:var(--ink-2)">Pegar seller.html a mano</summary>
+            <textarea id="paste" placeholder="Pega aquí los &lt;div class=&quot;sponsor-zone&quot; ...&gt;&lt;/div&gt;"></textarea>
+            <button class="btn b-green" style="margin-top:6px" onclick="loadFromText()">Importar pegado</button>
+        </details>
+        <div id="msg" class="msg"></div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Nuevo seller</div>
+        <label>Nombre</label>
+        <input type="text" id="n-name" placeholder="Kryptonia Collectibles">
+        <label style="margin-top:7px">URL del logo</label>
+        <input type="text" id="n-logo" placeholder="https://cdn.shopify.com/...">
+        <div class="g2" style="margin-top:7px">
+            <div><label>Ancho %</label><input type="number" step="0.01" id="n-w" value="1.10"></div>
+            <div><label>Alto %</label><input type="number" step="0.01" id="n-h" value="1.40"></div>
+        </div>
+        <button class="btn b-purple" style="margin-top:9px" onclick="spawn()">➕ Crear en el centro de la vista</button>
+        <div class="note">Se crea vacío y lo colocas arrastrando. Los datos (IG, web, layout) se rellenan en el panel de la derecha.</div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Sellers colocados <span id="count" class="val">0</span></div>
+        <div class="list" id="list"></div>
+    </div>
+
+    <div class="kbd">
+        <b>Arrastrar</b> mover · <b>Flechas</b> 0,01 % · <b>Shift+Flechas</b> 0,1 %<br>
+        <b>Ctrl+D</b> duplicar · <b>Ctrl+Z / Ctrl+Y</b> deshacer / rehacer<br>
+        <b>Supr</b> borrar · <b>Esc</b> deseleccionar · <b>Rueda</b> zoom · <b>0</b> encajar
+    </div>
+</div>
+
+<div id="props">
+    <div>
+        <h4 style="margin:0;font-size:13px;font-weight:900;color:var(--ink)" id="sel-title">Seller</h4>
+        <div style="font-size:10px;font-weight:800;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Datos del expositor</div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Ficha</div>
+        <label>Nombre</label>
+        <input type="text" id="p-name" oninput="live('name',this.value)">
+        <label style="margin-top:7px">Logo (URL)</label>
+        <input type="text" id="p-logo" oninput="live('logo',this.value)">
+        <label style="margin-top:7px">Instagram</label>
+        <input type="text" id="p-ig" oninput="live('ig',this.value)">
+        <label style="margin-top:7px">Web</label>
+        <input type="text" id="p-web" oninput="live('web',this.value)">
+    </div>
+
+    <div class="box">
+        <div class="box-title">Repetición del logo</div>
+        <select id="p-layout" onchange="applyLayout()">
+            <option value="single">1 logo</option>
+            <option value="dual-horizontal">2 en horizontal</option>
+            <option value="dual-vertical">2 en vertical</option>
+            <option value="triple-vertical">3 en vertical</option>
+            <option value="quad-vertical">4 en vertical</option>
+        </select>
+        <div class="note">Útil cuando un seller ocupa varias mesas seguidas y quieres el logo repetido dentro de la misma caja.</div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Tamaño <span id="size-tag" class="val"></span></div>
+        <label>Ancho % <span id="w-val" class="val"></span></label>
+        <input type="range" id="p-w-range" min="0.2" max="12" step="0.01" oninput="sizeLive('w',this.value)" onpointerdown="snapBefore()">
+        <input type="number" id="p-w" step="0.01" style="margin-top:5px" onchange="sizeSet('w',this.value)">
+        <label style="margin-top:9px">Alto % <span id="h-val" class="val"></span></label>
+        <input type="range" id="p-h-range" min="0.2" max="12" step="0.01" oninput="sizeLive('h',this.value)" onpointerdown="snapBefore()">
+        <input type="number" id="p-h" step="0.01" style="margin-top:5px" onchange="sizeSet('h',this.value)">
+        <div class="g2" style="margin-top:8px">
+            <button class="btn b-light b-xs" onclick="swapWH()">⟲ Girar (W↔H)</button>
+            <button class="btn b-light b-xs" onclick="snapToMesa()">Ajustar a la mesa</button>
+        </div>
+        <div class="note">«Ajustar a la mesa» copia el tamaño y la posición de la mesa que tiene debajo (necesita mesas.html cargado).</div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Posición</div>
+        <div class="g2">
+            <div><label>X</label><input type="number" step="0.0001" id="p-x"></div>
+            <div><label>Y</label><input type="number" step="0.0001" id="p-y"></div>
+        </div>
+        <button class="btn b-dark" style="margin-top:6px" onclick="applyXY()">Aplicar X/Y</button>
+        <div class="g3" style="margin-top:7px">
+            <button class="btn b-light b-xs" onclick="nudge(0,-0.05)">↑</button>
+            <button class="btn b-light b-xs" onclick="nudge(0,0.05)">↓</button>
+            <button class="btn b-light b-xs" onclick="dup()">Duplicar</button>
+        </div>
+        <div class="g2" style="margin-top:6px">
+            <button class="btn b-light b-xs" onclick="nudge(-0.05,0)">←</button>
+            <button class="btn b-light b-xs" onclick="nudge(0.05,0)">→</button>
+        </div>
+    </div>
+
+    <button class="btn b-red" onclick="del()">🗑 Eliminar seller</button>
+</div>
+
+<div id="bar">
+    <button class="btn b-light" onclick="undo()" id="btn-undo">↩ Deshacer</button>
+    <button class="btn b-light" onclick="redo()" id="btn-redo">↪ Rehacer</button>
+    <button class="btn b-light" onclick="zoomStep(1/1.35)">−</button>
+    <input type="range" id="zoom-range" min="0" max="1000" value="0" oninput="zoomFromSlider(this.value)">
+    <button class="btn b-light" onclick="zoomStep(1.35)">+</button>
+    <button class="btn b-light" onclick="fitView()">⤢</button>
+    <span id="zoom-tag">—</span>
+    <button class="btn b-dark" onclick="doExport(true)">📋 Copiar</button>
+    <button class="btn b-green" onclick="doExport(false)">💾 Descargar seller.html</button>
+</div>
+
+<div id="viewport">
+    <div id="container">
+        <img id="map-img" alt="Plano">
+        <div id="capa-mesas-ref" style="position:absolute;inset:0;pointer-events:none;display:none"></div>
+        <div id="capa"></div>
+        <div class="handle" id="handle"></div>
+    </div>
+</div>
+
+<textarea id="clip"></textarea>
+
+<script src="config.js"></script>
+<script>
+const C = window.ICONS_CONFIG;
+let scale = .15, sel = null, showMesas = false;
+const undoStack = [], redoStack = [], MAX_UNDO = 100;
+/* la clave sale del pabellón, así los dos mapas no se pisan el autoguardado */
+const AUTOSAVE_KEY = 'icons-' + C.hallName.toLowerCase().replace(/\s+/g,'') + '-sellers-v1';
+
+const viewport = document.getElementById('viewport');
+const container = document.getElementById('container');
+const mapImg = document.getElementById('map-img');
+const capa = document.getElementById('capa');
+const capaRef = document.getElementById('capa-mesas-ref');
+const props = document.getElementById('props');
+const handle = document.getElementById('handle');
+
+mapImg.src = C.mapImage;
+document.getElementById('hall-tag').textContent = C.hallLabel;
+document.title = `ICONS 2027 · ${C.hallName} · Sellers Builder`;
+
+window.addEventListener('load', () => {
+    if (mapImg.complete && mapImg.naturalWidth) init(); else mapImg.onload = init;
+});
+function init(){
+    fitView();
+    viewport.addEventListener('wheel', onWheel, {passive:false});
+    loadFromFile();
+    loadMesasRef();
+    setInterval(autosave, 8000);
+}
+
+/* ---------- utilidades ---------- */
+function pct(v){ return parseFloat(String(v||'').replace('%','')) || 0; }
+function f4(n){ return Number(n).toFixed(4); }
+function zones(){ return Array.from(capa.querySelectorAll('.zone')); }
+function msg(t,k){
+    const el = document.getElementById('msg');
+    el.className = 'msg ' + k; el.textContent = t;
+    clearTimeout(msg._t);
+    if (k==='ok') msg._t = setTimeout(()=>{el.className='msg';}, 5000);
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+const LAYOUTS = {'single':1,'dual-horizontal':2,'dual-vertical':2,'triple-vertical':3,'quad-vertical':4};
+
+function render(z){
+    const layout = z.dataset.logoLayout || 'single';
+    const n = LAYOUTS[layout] || 1;
+    const logo = z.dataset.logo || '';
+    const name = z.dataset.name || 'Sin nombre';
+    const cls = layout === 'single' ? 'inner' : `inner multi lay-${layout}`;
+    z.innerHTML = logo
+        ? `<div class="${cls}">${Array.from({length:n},()=>`<img src="${esc(logo)}" alt="">`).join('')}</div>`
+        : `<div class="inner"><span class="ph">${esc(name)}</span></div>`;
+}
+
+function makeZone(o){
+    const z = document.createElement('div');
+    z.className = 'zone';
+    z.dataset.name = o.name || '';
+    z.dataset.logo = o.logo || '';
+    z.dataset.ig = o.ig || '';
+    z.dataset.web = o.web || '';
+    z.dataset.logoLayout = o.layout || 'single';
+    z.style.left = f4(o.l)+'%'; z.style.top = f4(o.t)+'%';
+    z.style.width = f4(o.w)+'%'; z.style.height = f4(o.h)+'%';
+    render(z);
+    z.addEventListener('mousedown', e => {
+        if (e.button !== 0) return;
+        e.preventDefault(); e.stopPropagation();
+        select(z); startMove(e);
+    });
+    return z;
+}
+
+/* ---------- selección ---------- */
+function select(z){
+    sel = z;
+    zones().forEach(x => x.classList.toggle('sel', x === z));
+    if (!z){ props.classList.remove('on'); handle.classList.remove('on'); refreshList(); return; }
+    props.classList.add('on');
+    document.getElementById('sel-title').textContent = z.dataset.name || 'Seller sin nombre';
+    document.getElementById('p-name').value = z.dataset.name || '';
+    document.getElementById('p-logo').value = z.dataset.logo || '';
+    document.getElementById('p-ig').value = z.dataset.ig || '';
+    document.getElementById('p-web').value = z.dataset.web || '';
+    document.getElementById('p-layout').value = z.dataset.logoLayout || 'single';
+    syncSize(); syncPos(); drawHandle(); refreshList();
+}
+function deselect(){ select(null); }
+
+function syncSize(){
+    if (!sel) return;
+    const w = pct(sel.style.width), h = pct(sel.style.height);
+    document.getElementById('p-w').value = w.toFixed(3);
+    document.getElementById('p-h').value = h.toFixed(3);
+    document.getElementById('p-w-range').value = Math.min(12, Math.max(.2, w));
+    document.getElementById('p-h-range').value = Math.min(12, Math.max(.2, h));
+    document.getElementById('w-val').textContent = w.toFixed(3)+'%';
+    document.getElementById('h-val').textContent = h.toFixed(3)+'%';
+    document.getElementById('size-tag').textContent =
+        `${Math.round(w/100*mapImg.naturalWidth)}×${Math.round(h/100*mapImg.naturalHeight)} px`;
+}
+function syncPos(){
+    if (!sel) return;
+    document.getElementById('p-x').value = pct(sel.style.left).toFixed(4);
+    document.getElementById('p-y').value = pct(sel.style.top).toFixed(4);
+}
+function drawHandle(){
+    if (!sel){ handle.classList.remove('on'); return; }
+    handle.classList.add('on');
+    handle.style.left = f4(pct(sel.style.left) + pct(sel.style.width))+'%';
+    handle.style.top = f4(pct(sel.style.top) + pct(sel.style.height))+'%';
+    handle.style.transform = `translate(-50%,-50%) scale(${1/scale})`;
+}
+function refreshList(){
+    const box = document.getElementById('list');
+    const all = zones();
+    document.getElementById('count').textContent = all.length;
+    box.innerHTML = all.map((z,i) =>
+        `<div class="list-item ${z===sel?'on':''}" onclick="pickIndex(${i})">
+            <span>${esc(z.dataset.name || '(sin nombre)')}</span>
+            <span>${pct(z.style.left).toFixed(1)},${pct(z.style.top).toFixed(1)}</span>
+         </div>`).join('') || '<div class="list-item">Sin sellers</div>';
+}
+function pickIndex(i){
+    const z = zones()[i];
+    if (!z) return;
+    select(z);
+    const mr = mapImg.getBoundingClientRect(), vr = viewport.getBoundingClientRect();
+    const x = (mr.left - vr.left + viewport.scrollLeft) + (pct(z.style.left)+pct(z.style.width)/2)/100*mr.width;
+    const y = (mr.top - vr.top + viewport.scrollTop) + (pct(z.style.top)+pct(z.style.height)/2)/100*mr.height;
+    const fx = 350 + (viewport.clientWidth - 350 - 330)/2, fy = (viewport.clientHeight - 130)/2;
+    viewport.scrollTo({left:Math.max(0,x-fx), top:Math.max(0,y-fy), behavior:'smooth'});
+}
+
+/* ---------- undo ---------- */
+function serialize(){
+    return zones().map(z => ({
+        name:z.dataset.name, logo:z.dataset.logo, ig:z.dataset.ig, web:z.dataset.web,
+        layout:z.dataset.logoLayout||'single',
+        l:pct(z.style.left), t:pct(z.style.top), w:pct(z.style.width), h:pct(z.style.height)
+    }));
+}
+function deserialize(data){
+    capa.innerHTML=''; sel=null;
+    data.forEach(o => capa.appendChild(makeZone(o)));
+    select(null);
+}
+function snap(){
+    const s = JSON.stringify(serialize());
+    if (undoStack.length && undoStack[undoStack.length-1] === s) return;
+    undoStack.push(s);
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+    redoStack.length = 0; updateBar();
+}
+function undo(){
+    if (!undoStack.length) return msg('Nada que deshacer.','err');
+    redoStack.push(JSON.stringify(serialize()));
+    deserialize(JSON.parse(undoStack.pop())); updateBar(); msg('Deshecho.','ok');
+}
+function redo(){
+    if (!redoStack.length) return msg('Nada que rehacer.','err');
+    undoStack.push(JSON.stringify(serialize()));
+    deserialize(JSON.parse(redoStack.pop())); updateBar(); msg('Rehecho.','ok');
+}
+function updateBar(){
+    document.getElementById('btn-undo').disabled = !undoStack.length;
+    document.getElementById('btn-redo').disabled = !redoStack.length;
+    document.getElementById('btn-undo').textContent = '↩ Deshacer' + (undoStack.length?` (${undoStack.length})`:'');
+}
+function autosave(){ try{ localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({t:Date.now(), data:serialize()})); }catch(e){} }
+function restoreAuto(){
+    try{
+        const raw = localStorage.getItem(AUTOSAVE_KEY);
+        if (!raw) return msg('No hay sesión guardada.','err');
+        const o = JSON.parse(raw);
+        if (!o.data || !o.data.length) return msg('La sesión guardada está vacía.','err');
+        snap(); deserialize(o.data); refreshList();
+        msg(`Restaurados ${o.data.length} sellers (${new Date(o.t).toLocaleString('es-ES')}).`,'ok');
+    }catch(e){ msg('No he podido restaurar.','err'); }
+}
+
+/* ---------- importar ---------- */
+async function loadFromFile(){
+    try{
+        const r = await fetch('seller.html?v='+Date.now(), {cache:'no-store'});
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        parseInto(await r.text(), 'seller.html');
+    }catch(e){ msg('No he podido cargar seller.html ('+e.message+'). Usa el pegado manual.','err'); }
+}
+function loadFromText(){
+    const v = document.getElementById('paste').value;
+    if (!v.trim()) return msg('Pega primero el contenido.','err');
+    parseInto(v,'texto pegado');
+}
+function parseInto(html, source){
+    const h = document.createElement('div');
+    h.innerHTML = html;
+    const found = Array.from(h.querySelectorAll('.sponsor-zone'));
+    if (!found.length){
+        if (source === 'seller.html'){ msg('seller.html está vacío: empieza a colocar sellers.','ok'); return; }
+        return msg('No he encontrado ningún .sponsor-zone.','err');
+    }
+    snap(); capa.innerHTML=''; sel=null;
+    found.forEach(el => capa.appendChild(makeZone({
+        name:el.dataset.name, logo:el.dataset.logo, ig:el.dataset.ig, web:el.dataset.web,
+        layout: el.dataset.logoLayout || (el.dataset.dual==='true' ? 'dual-vertical' : 'single'),
+        l:pct(el.style.left), t:pct(el.style.top), w:pct(el.style.width)||1, h:pct(el.style.height)||1
+    })));
+    select(null);
+    msg(`${source}: ${found.length} sellers.`,'ok');
+}
+function clearAll(){
+    if (!confirm('¿Vaciar todos los sellers?')) return;
+    snap(); capa.innerHTML=''; select(null); msg('Vacío.','ok');
+}
+
+/* ---------- mesas de referencia ---------- */
+async function loadMesasRef(){
+    try{
+        const r = await fetch('mesas.html?v='+Date.now(), {cache:'no-store'});
+        if (!r.ok) return;
+        const html = await r.text();
+        capaRef.innerHTML = html;
+        capaRef.querySelectorAll('.mesa').forEach(m => {
+            const hex = C.colorFor(m.dataset.type||'collector', m.dataset.tone||'base', m.dataset.color||'');
+            m.style.position='absolute';
+            m.style.boxSizing='border-box';
+            m.style.border = '1px solid ' + C.shade(hex,.3);
+            m.style.background = C.rgba(hex,.30);
+            m.style.borderRadius='2px';
+        });
+    }catch(e){}
+}
+function showMesasToggle(){
+    showMesas = !showMesas;
+    capaRef.style.display = showMesas ? 'block' : 'none';
+    document.getElementById('btn-mesas').classList.toggle('b-dark', showMesas);
+}
+
+/* ---------- crear ---------- */
+function spawn(){
+    const vr = viewport.getBoundingClientRect(), mr = mapImg.getBoundingClientRect();
+    const cx = ((vr.left+vr.width/2-mr.left)/mr.width)*100;
+    const cy = ((vr.top+vr.height/2-mr.top)/mr.height)*100;
+    const w = parseFloat(document.getElementById('n-w').value)||1.1;
+    const h = parseFloat(document.getElementById('n-h').value)||1.4;
+    snap();
+    const z = makeZone({
+        name: document.getElementById('n-name').value.trim(),
+        logo: document.getElementById('n-logo').value.trim(),
+        l: cx-w/2, t: cy-h/2, w, h
+    });
+    capa.appendChild(z);
+    select(z);
+    document.getElementById('n-name').value = '';
+    document.getElementById('n-logo').value = '';
+    msg('Seller creado. Arrástralo a su sitio.','ok');
+}
+function dup(){
+    if (!sel) return;
+    snap();
+    const z = makeZone({
+        name:sel.dataset.name, logo:sel.dataset.logo, ig:sel.dataset.ig, web:sel.dataset.web,
+        layout:sel.dataset.logoLayout,
+        l:pct(sel.style.left)+pct(sel.style.width)+0.15, t:pct(sel.style.top),
+        w:pct(sel.style.width), h:pct(sel.style.height)
+    });
+    capa.appendChild(z); select(z);
+    msg('Duplicado.','ok');
+}
+function del(){
+    if (!sel) return;
+    if (!confirm(`¿Eliminar "${sel.dataset.name||'sin nombre'}"?`)) return;
+    snap(); sel.remove(); select(null); msg('Eliminado.','ok');
+}
+
+/* ---------- edición ---------- */
+let liveT = null;
+function live(field, value){
+    if (!sel) return;
+    clearTimeout(liveT);
+    liveT = setTimeout(snap, 700);
+    if (field==='name'){ sel.dataset.name = value; document.getElementById('sel-title').textContent = value || 'Seller sin nombre'; }
+    if (field==='logo') sel.dataset.logo = value.trim();
+    if (field==='ig') sel.dataset.ig = value.trim();
+    if (field==='web') sel.dataset.web = value.trim();
+    render(sel); refreshList();
+}
+function applyLayout(){
+    if (!sel) return;
+    snap();
+    sel.dataset.logoLayout = document.getElementById('p-layout').value;
+    render(sel);
+}
+let sizeSnapped = false;
+function snapBefore(){ if (!sizeSnapped){ snap(); sizeSnapped = true; } }
+document.addEventListener('pointerup', ()=>{ sizeSnapped = false; });
+function sizeLive(dim, v){
+    if (!sel) return;
+    const val = Math.max(.1, parseFloat(v)||.1);
+    sel.style[dim==='w'?'width':'height'] = f4(val)+'%';
+    syncSize(); drawHandle();
+}
+function sizeSet(dim,v){ if(!sel) return; snap(); sizeLive(dim,v); }
+function swapWH(){
+    if (!sel) return;
+    snap();
+    const w = pct(sel.style.width), h = pct(sel.style.height);
+    sel.style.width = f4(h)+'%'; sel.style.height = f4(w)+'%';
+    syncSize(); drawHandle();
+}
+function snapToMesa(){
+    if (!sel) return;
+    const cx = pct(sel.style.left)+pct(sel.style.width)/2;
+    const cy = pct(sel.style.top)+pct(sel.style.height)/2;
+    const list = Array.from(capaRef.querySelectorAll('.mesa'));
+    if (!list.length) return msg('Carga mesas.html en la carpeta para poder ajustar.','err');
+    let best = null, bestD = Infinity;
+    list.forEach(m => {
+        const mx = pct(m.style.left)+pct(m.style.width)/2;
+        const my = pct(m.style.top)+pct(m.style.height)/2;
+        const d = (mx-cx)**2 + (my-cy)**2;
+        if (d < bestD){ bestD = d; best = m; }
+    });
+    if (!best) return;
+    snap();
+    sel.style.left = f4(pct(best.style.left))+'%';
+    sel.style.top = f4(pct(best.style.top))+'%';
+    sel.style.width = f4(pct(best.style.width))+'%';
+    sel.style.height = f4(pct(best.style.height))+'%';
+    syncSize(); syncPos(); drawHandle();
+    msg('Ajustado a ' + (best.dataset.info||'mesa') + '.','ok');
+}
+function applyXY(){
+    if (!sel) return;
+    const x = parseFloat(document.getElementById('p-x').value);
+    const y = parseFloat(document.getElementById('p-y').value);
+    if (!Number.isFinite(x)||!Number.isFinite(y)) return msg('X/Y no válidos.','err');
+    snap();
+    sel.style.left = f4(x)+'%'; sel.style.top = f4(y)+'%';
+    syncPos(); drawHandle();
+}
+function nudge(dx,dy){
+    if (!sel) return;
+    snap();
+    sel.style.left = f4(pct(sel.style.left)+dx)+'%';
+    sel.style.top = f4(pct(sel.style.top)+dy)+'%';
+    syncPos(); drawHandle(); refreshList();
+}
+
+/* ---------- arrastrar ---------- */
+function mouseToPct(e){
+    const r = mapImg.getBoundingClientRect();
+    return {x:((e.clientX-r.left)/r.width)*100, y:((e.clientY-r.top)/r.height)*100};
+}
+let moving = null;
+function startMove(e){
+    snap();
+    moving = {start:mouseToPct(e), l:pct(sel.style.left), t:pct(sel.style.top)};
+}
+document.addEventListener('mousemove', e => {
+    if (!moving || !sel) return;
+    const n = mouseToPct(e);
+    sel.style.left = f4(moving.l + n.x - moving.start.x)+'%';
+    sel.style.top = f4(moving.t + n.y - moving.start.y)+'%';
+    syncPos(); drawHandle();
+});
+document.addEventListener('mouseup', () => { if (moving){ moving=null; refreshList(); } });
+
+handle.addEventListener('mousedown', e => {
+    if (!sel) return;
+    e.preventDefault(); e.stopPropagation();
+    snap();
+    const l = pct(sel.style.left), t = pct(sel.style.top);
+    const move = ev => {
+        const n = mouseToPct(ev);
+        sel.style.width = f4(Math.max(.1, n.x - l))+'%';
+        sel.style.height = f4(Math.max(.1, n.y - t))+'%';
+        syncSize(); drawHandle();
+    };
+    const up = () => { document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+});
+
+/* ---------- pan y zoom ---------- */
+let panning = null;
+viewport.addEventListener('mousedown', e => {
+    if (e.target.closest('.zone') || e.target === handle) return;
+    panning = {x:e.clientX, y:e.clientY, sl:viewport.scrollLeft, st:viewport.scrollTop};
+    viewport.classList.add('panning');
+    deselect();
+});
+document.addEventListener('mousemove', e => {
+    if (!panning) return;
+    viewport.scrollLeft = panning.sl - (e.clientX-panning.x);
+    viewport.scrollTop = panning.st - (e.clientY-panning.y);
+});
+document.addEventListener('mouseup', () => { if (panning){ panning=null; viewport.classList.remove('panning'); } });
+
+function onWheel(e){
+    e.preventDefault();
+    const before = mouseToPct(e);
+    const k = e.deltaY > 0 ? .88 : 1.14;
+    const ns = Math.min(ZMAX, Math.max(ZMIN, scale*k));
+    if (ns === scale) return;
+    scale = ns; applyScale();
+    const vr = viewport.getBoundingClientRect();
+    viewport.scrollLeft = (before.x/100)*mapImg.naturalWidth*scale - (e.clientX-vr.left);
+    viewport.scrollTop = (before.y/100)*mapImg.naturalHeight*scale - (e.clientY-vr.top);
+}
+const ZMIN = 0.03, ZMAX = 8;
+function applyScale(){
+    container.style.transform = `scale(${scale})`;
+    document.getElementById('zoom-tag').textContent = Math.round(scale*100)+' %';
+    const r = document.getElementById('zoom-range');
+    if (r) r.value = Math.round(1000*Math.log(scale/ZMIN)/Math.log(ZMAX/ZMIN));
+    drawHandle();
+}
+function zoomFromSlider(v){ zoomAtCenter(ZMIN*Math.pow(ZMAX/ZMIN, v/1000)); }
+function zoomStep(k){ zoomAtCenter(scale*k); }
+function zoomAtCenter(z){
+    const nz = Math.min(ZMAX, Math.max(ZMIN, z));
+    const vr = viewport.getBoundingClientRect();
+    const cx = 350 + (viewport.clientWidth - 350 - 330)/2;
+    const cy = (viewport.clientHeight - 130)/2;
+    const before = mouseToPct({clientX: vr.left+cx, clientY: vr.top+cy});
+    scale = nz; applyScale();
+    viewport.scrollLeft = (before.x/100)*mapImg.naturalWidth*scale - cx;
+    viewport.scrollTop  = (before.y/100)*mapImg.naturalHeight*scale - cy;
+}
+function fitView(){
+    const w = mapImg.naturalWidth || 7499;
+    scale = ((window.innerWidth - 680)/w) * .95;
+    if (scale <= 0) scale = .1;
+    applyScale();
+}
+
+/* ---------- teclado ---------- */
+document.addEventListener('keydown', e => {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    if (mod && e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); return; }
+    if (mod && e.key.toLowerCase()==='d'){ e.preventDefault(); dup(); return; }
+    if (e.key === '0'){ fitView(); return; }
+    if (e.key === 'Escape'){ deselect(); return; }
+    if (!sel) return;
+    if (e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); del(); return; }
+    if (e.key.startsWith('Arrow')){
+        e.preventDefault();
+        const s = e.shiftKey ? .1 : .01;
+        if (e.key==='ArrowUp') nudge(0,-s);
+        if (e.key==='ArrowDown') nudge(0,s);
+        if (e.key==='ArrowLeft') nudge(-s,0);
+        if (e.key==='ArrowRight') nudge(s,0);
+    }
+});
+
+/* ---------- exportar ---------- */
+function exportLines(){
+    return zones().map(z => {
+        const layout = z.dataset.logoLayout && z.dataset.logoLayout !== 'single'
+            ? ` data-logo-layout="${z.dataset.logoLayout}"` : '';
+        return `<div class="sponsor-zone" style="left: ${f4(pct(z.style.left))}%; top: ${f4(pct(z.style.top))}%; width: ${f4(pct(z.style.width))}%; height: ${f4(pct(z.style.height))}%;" data-name="${esc(z.dataset.name)}" data-logo="${esc(z.dataset.logo)}" data-ig="${esc(z.dataset.ig)}" data-web="${esc(z.dataset.web)}"${layout}></div>`;
+    }).join('\n') + '\n';
+}
+function doExport(copyOnly){
+    const all = zones();
+    if (!all.length) return alert('No hay sellers que exportar.');
+    const html = exportLines();
+    const area = document.getElementById('clip');
+    area.value = html; area.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    if (navigator.clipboard) navigator.clipboard.writeText(html).catch(()=>{});
+    autosave();
+    if (copyOnly) return alert(`Copiado: ${all.length} sellers.`);
+    const blob = new Blob([html], {type:'text/plain;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'seller.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    alert(`Descargado seller.html con ${all.length} sellers.`);
+}
+updateBar();
+refreshList();
+</script>
+</body>
+</html>

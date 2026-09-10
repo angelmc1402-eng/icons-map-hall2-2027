@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICONS 2027 · Hall 2 · Tables Builder Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+    --bg:#111827; --panel:#ffffff; --line:#e2e8f0; --soft:#f8fafc;
+    --ink:#0f172a; --ink-2:#475569; --ink-3:#94a3b8;
+    --cyan:#00d2d3; --blue:#3b82f6; --green:#2ecc71; --orange:#ff9f43;
+    --red:#ff5a5f; --purple:#8b5cf6;
+}
+*{box-sizing:border-box}
+body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Inter',sans-serif}
+
+/* ---------- LIENZO ---------- */
+#viewport{position:absolute;inset:0;overflow:auto;cursor:grab}
+#viewport.panning{cursor:grabbing}
+#viewport.marquee-ready{cursor:crosshair}
+#container{position:relative;transform-origin:0 0;display:inline-block;margin:24px 340px 130px 360px}
+#map-img{display:block;image-rendering:high-quality;max-width:none;pointer-events:none;user-select:none;-webkit-user-drag:none}
+#capa-mesas{position:absolute;inset:0;pointer-events:none}
+
+.mesa{
+    position:absolute;box-sizing:border-box;border:1.5px solid #2ecc71;
+    background:rgba(46,204,113,.45);border-radius:2px;pointer-events:auto;
+    display:flex;align-items:center;justify-content:center;
+    font-size:8px;font-weight:900;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.9);
+    cursor:pointer;overflow:hidden;
+    transition:box-shadow .08s ease,filter .08s ease;
+}
+.mesa:hover{filter:brightness(1.25);z-index:60}
+.mesa.sel{
+    border-color:#fff!important;
+    box-shadow:0 0 0 1.5px #0f172a,0 0 14px rgba(255,159,67,.95);
+    z-index:400;
+}
+.mesa.sel::after{
+    content:'';position:absolute;inset:0;background:rgba(255,159,67,.45);pointer-events:none;
+}
+.mesa.hide-label{font-size:0}
+
+#group-outline{
+    position:absolute;display:none;pointer-events:none;border:2px dashed var(--cyan);
+    background:rgba(0,210,211,.10);z-index:250;box-sizing:border-box;
+}
+#group-outline .tag{
+    position:absolute;left:0;top:0;transform:translateY(-100%);
+    background:var(--cyan);color:#0f172a;padding:3px 7px;border-radius:5px 5px 0 0;
+    font-size:10px;font-weight:900;white-space:nowrap;
+}
+#marquee{position:absolute;display:none;border:1.5px dashed #fff;background:rgba(0,210,211,.18);z-index:600;pointer-events:none}
+
+/* Tirador de redimensionado */
+.handle{
+    position:absolute;width:11px;height:11px;background:#fff;border:2px solid var(--orange);
+    border-radius:2px;z-index:800;display:none;pointer-events:auto;cursor:nwse-resize;
+    box-shadow:0 2px 6px rgba(0,0,0,.5);
+}
+.handle.on{display:block}
+
+/* ---------- PANEL IZQUIERDO ---------- */
+#palette{
+    position:fixed;top:10px;left:10px;width:334px;max-height:calc(100vh - 20px);
+    overflow-y:auto;background:var(--panel);padding:14px;border-radius:12px;
+    box-shadow:0 20px 50px rgba(0,0,0,.5);z-index:20000;
+    display:flex;flex-direction:column;gap:11px;
+}
+#palette::-webkit-scrollbar{width:8px}
+#palette::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:8px}
+
+.hd{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:2px solid var(--line);padding-bottom:9px}
+.hd h3{margin:0;font-size:14px;font-weight:900;color:var(--ink);letter-spacing:-.02em}
+.hd small{font-size:9px;font-weight:800;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em}
+
+.box{background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:11px}
+.box-title{font-size:10px;font-weight:900;color:var(--ink-2);margin-bottom:9px;text-transform:uppercase;letter-spacing:.06em;display:flex;justify-content:space-between;align-items:center}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}
+label{font-size:9px;font-weight:900;color:#64748b;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
+input,select{
+    width:100%;padding:6px 7px;border:1px solid #cbd5e1;border-radius:6px;
+    font-family:'Inter',monospace;font-size:12px;font-weight:700;background:#fff;color:var(--ink);
+}
+input[type=color]{padding:2px;height:31px;cursor:pointer}
+input[type=range]{padding:0;border:none;background:transparent;height:20px;accent-color:var(--blue);cursor:pointer}
+textarea{width:100%;min-height:90px;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-family:monospace;font-size:11px;resize:vertical}
+select:focus,input:focus{outline:2px solid var(--blue);outline-offset:-1px}
+
+.btn{
+    width:100%;padding:8px 9px;border:none;border-radius:7px;font-family:'Inter',sans-serif;
+    font-weight:900;font-size:11px;cursor:pointer;transition:transform .12s,filter .12s;
+    display:flex;align-items:center;justify-content:center;gap:5px;line-height:1.2;
+}
+.btn:hover{transform:translateY(-1px);filter:brightness(.95)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.b-blue{background:var(--blue);color:#fff}
+.b-green{background:var(--green);color:#fff}
+.b-dark{background:var(--ink);color:var(--cyan)}
+.b-orange{background:var(--orange);color:#fff}
+.b-red{background:var(--red);color:#fff}
+.b-purple{background:var(--purple);color:#fff}
+.b-light{background:#e2e8f0;color:var(--ink)}
+.b-xs{padding:6px 4px;font-size:10px}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg .btn{background:#e2e8f0;color:var(--ink)}
+.seg .btn.on{background:var(--cyan);color:#0f172a;box-shadow:inset 0 0 0 2px var(--ink)}
+
+.note{font-size:10px;color:#64748b;line-height:1.5;margin-top:6px}
+.kbd{font-size:10px;color:#475569;line-height:1.75;background:#f1f5f9;padding:9px;border-radius:7px;border:1px solid var(--line)}
+.kbd b{color:var(--ink)}
+.msg{padding:8px;border-radius:7px;font-size:11px;font-weight:700;display:none;margin-top:7px;line-height:1.4}
+.msg.err{background:#fff1f2;color:#9f1239;border:1px solid #fecdd3;display:block}
+.msg.ok{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;display:block}
+
+.stat-row{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--ink-2);padding:3px 0;border-bottom:1px dotted #e2e8f0}
+.stat-row:last-child{border:none}
+.stat-row b{color:var(--ink)}
+.chip{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+details summary{font-size:11px;font-weight:900;cursor:pointer;color:var(--ink-2);padding:2px 0}
+
+/* ---------- PANEL DERECHO (PROPIEDADES) ---------- */
+#props{
+    position:fixed;top:10px;right:10px;width:300px;max-height:calc(100vh - 20px);overflow-y:auto;
+    background:var(--panel);padding:14px;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.5);
+    z-index:20000;display:none;flex-direction:column;gap:11px;
+}
+#props.on{display:flex;animation:pop .18s cubic-bezier(.18,.89,.32,1.28)}
+@keyframes pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+#props::-webkit-scrollbar{width:8px}
+#props::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:8px}
+#sel-title{margin:0;font-size:13px;font-weight:900;color:var(--ink);line-height:1.3}
+#sel-sub{font-size:10px;font-weight:800;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.val{font-size:11px;font-weight:900;color:var(--blue);font-family:monospace}
+
+/* ---------- BARRA INFERIOR ---------- */
+#bar{
+    position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
+    display:flex;gap:8px;z-index:20000;background:rgba(15,23,42,.92);
+    padding:8px;border-radius:999px;box-shadow:0 14px 34px rgba(0,0,0,.5);
+    backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);
+}
+#bar .btn{width:auto;padding:9px 16px;border-radius:999px}
+#zoom-tag{
+    align-self:center;color:#94a3b8;font-size:10px;font-weight:900;
+    padding:0 8px;font-family:monospace;white-space:nowrap;min-width:48px;text-align:center;
+}
+#bar .btn.b-light{padding:9px 13px}
+#bar #zoom-range{
+    width:132px;align-self:center;height:4px;padding:0;border:none;border-radius:99px;
+    background:#334155;cursor:pointer;-webkit-appearance:none;appearance:none;
+}
+#bar #zoom-range::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;border:2.5px solid #00d2d3;cursor:grab}
+#bar #zoom-range::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;border:2.5px solid #00d2d3;cursor:grab}
+#clip{position:absolute;left:-9999px;top:-9999px}
+</style>
+</head>
+<body>
+
+<div id="palette">
+    <div class="hd">
+        <div>
+            <h3>Tables Builder Pro</h3>
+            <small id="hall-tag">Hall 2</small>
+        </div>
+        <button class="btn b-light b-xs" style="width:auto;padding:6px 9px" onclick="toggleLabels()" id="btn-labels" title="Mostrar/ocultar números">123</button>
+    </div>
+
+    <!-- MODO -->
+    <div class="box">
+        <div class="box-title">Modo de selección</div>
+        <div class="seg">
+            <button id="m-island" class="btn on" onclick="setMode('island')">Islas</button>
+            <button id="m-table" class="btn" onclick="setMode('table')">Mesas</button>
+        </div>
+        <div class="note"><b>Islas</b>: al pulsar seleccionas la isla completa (las mesas contiguas del plano, no todo el prefijo). <b>Mesas</b>: solo la que pulsas. Con <b>Shift</b> sumas o restas de la selección, y arrastrando sobre el plano con Shift haces un marco.</div>
+    </div>
+
+    <!-- CARGAR -->
+    <div class="box">
+        <div class="box-title">Cargar / guardar</div>
+        <div class="g2">
+            <button class="btn b-blue" onclick="loadFromFile()">Cargar mesas.html</button>
+            <button class="btn b-light" onclick="restoreAuto()">Restaurar sesión</button>
+        </div>
+        <div class="g2" style="margin-top:7px">
+            <button class="btn b-light" onclick="clearAll()">Vaciar todo</button>
+            <button class="btn b-light" onclick="exportJSON()">Exportar JSON</button>
+        </div>
+        <details style="margin-top:9px">
+            <summary>Pegar mesas.html a mano</summary>
+            <textarea id="paste" placeholder="Pega aquí los &lt;div class=&quot;mesa&quot; ...&gt;&lt;/div&gt;"></textarea>
+            <button class="btn b-green" style="margin-top:6px" onclick="loadFromText()">Importar pegado</button>
+        </details>
+        <div class="note">Si abres el builder con doble clic (file://) el navegador puede bloquear la carga automática. Usa el pegado manual o abre la carpeta con un servidor local.</div>
+        <div id="msg" class="msg"></div>
+    </div>
+
+    <!-- CREAR -->
+    <div class="box">
+        <div class="box-title">Crear mesas</div>
+        <div class="g2">
+            <div>
+                <label>Forma</label>
+                <select id="c-shape" onchange="shapeChanged()">
+                    <option value="single">Mesa individual</option>
+                    <option value="row">Fila horizontal</option>
+                    <option value="col">Columna vertical</option>
+                    <option value="grid">Rejilla</option>
+                    <option value="ring" selected>Isla perimetral</option>
+                </select>
+            </div>
+            <div>
+                <label>Categoría</label>
+                <select id="c-cat"></select>
+            </div>
+        </div>
+        <div class="g2" style="margin-top:7px">
+            <div>
+                <label>Zona (letra)</label>
+                <input type="text" id="c-zone" value="A" maxlength="3">
+            </div>
+            <div>
+                <label>Tipo</label>
+                <select id="c-type"></select>
+            </div>
+        </div>
+
+        <div id="ring-fields" class="g3" style="margin-top:7px">
+            <div><label>Arriba</label><input type="number" id="c-top" value="2" min="0"></div>
+            <div><label>Lados</label><input type="number" id="c-side" value="4" min="0"></div>
+            <div><label>Abajo</label><input type="number" id="c-bottom" value="2" min="0"></div>
+        </div>
+        <div id="count-fields" class="g2" style="margin-top:7px;display:none">
+            <div><label>Columnas</label><input type="number" id="c-cols" value="6" min="1"></div>
+            <div><label>Filas</label><input type="number" id="c-rows" value="1" min="1"></div>
+        </div>
+
+        <div class="g2" style="margin-top:7px">
+            <div><label>Ancho %</label><input type="number" step="0.01" id="c-w" value="1.10"></div>
+            <div><label>Alto %</label><input type="number" step="0.01" id="c-h" value="0.50"></div>
+        </div>
+        <div class="g2" style="margin-top:7px">
+            <div><label>Gap X %</label><input type="number" step="0.01" id="c-gx" value="0.02"></div>
+            <div><label>Gap Y %</label><input type="number" step="0.01" id="c-gy" value="0.05"></div>
+        </div>
+        <div class="note" id="ring-note">En la isla perimetral los lados usan mesas verticales automáticamente (ancho/alto invertidos).</div>
+        <button class="btn b-blue" style="margin-top:9px" onclick="spawn()">➕ Crear en el centro de la vista</button>
+    </div>
+
+    <!-- SELECCIONAR -->
+    <div class="box">
+        <div class="box-title">Ir a una isla</div>
+        <select id="picker" onchange="pickIsland()"><option value="">— sin mesas cargadas —</option></select>
+        <div class="g2" style="margin-top:7px">
+            <button class="btn b-light b-xs" onclick="selectAll()">Seleccionar todo</button>
+            <button class="btn b-light b-xs" onclick="deselect()">Deseleccionar</button>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="box">
+        <div class="box-title">Recuento <span id="stat-total" class="val">0</span></div>
+        <div id="stats"></div>
+    </div>
+
+    <div class="kbd">
+        <b>Flechas</b> mover 0,005 % · <b>Shift+Flechas</b> 0,05 % · <b>Alt+Flechas</b> 0,5 %<br>
+        <b>Shift+clic</b> añadir/quitar de la selección<br>
+        <b>Shift+arrastrar</b> marco de selección · <b>arrastrar vacío</b> mover el plano<br>
+        <b>Ctrl+D</b> clonar a la derecha · <b>Ctrl+Z / Ctrl+Y</b> deshacer / rehacer<br>
+        <b>Supr</b> borrar · <b>Esc</b> deseleccionar · <b>Rueda</b> zoom · <b>0</b> encajar
+    </div>
+</div>
+
+<!-- ============ PROPIEDADES ============ -->
+<div id="props">
+    <div>
+        <h4 id="sel-title">Selección</h4>
+        <div id="sel-sub"></div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Identificación</div>
+        <label id="name-lbl">Prefijo de isla</label>
+        <input type="text" id="p-name" spellcheck="false">
+        <button class="btn b-purple" style="margin-top:6px" onclick="applyName()">Aplicar nombre</button>
+        <div class="g2" style="margin-top:6px">
+            <button class="btn b-light b-xs" onclick="renumber(1)">Renumerar 1→n</button>
+            <button class="btn b-light b-xs" onclick="renumberAsk()">Renumerar desde…</button>
+        </div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Aspecto</div>
+        <div class="g2">
+            <div>
+                <label>Tipo de mesa</label>
+                <select id="p-type" onchange="applyType()"></select>
+            </div>
+            <div>
+                <label>Tono</label>
+                <select id="p-tone" onchange="applyTone()"></select>
+            </div>
+        </div>
+        <div class="g2" style="margin-top:7px">
+            <div>
+                <label>Color propio</label>
+                <input type="color" id="p-color" oninput="applyColor()">
+            </div>
+            <div>
+                <label>&nbsp;</label>
+                <button class="btn b-light b-xs" onclick="clearColor()">Quitar color propio</button>
+            </div>
+        </div>
+        <div class="note">El tono sale de la paleta de <b>config.js</b>, así el mapa público pinta exactamente igual. El color propio solo para excepciones.</div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Tamaño <span id="size-tag" class="val"></span></div>
+        <label>Ancho % <span id="w-val" class="val"></span></label>
+        <input type="range" id="p-w-range" min="0.05" max="6" step="0.005" oninput="sizeLive('w',this.value)" onpointerdown="snapBefore()">
+        <input type="number" id="p-w" step="0.01" style="margin-top:5px" onchange="sizeSet('w',this.value)">
+        <label style="margin-top:9px">Alto % <span id="h-val" class="val"></span></label>
+        <input type="range" id="p-h-range" min="0.05" max="6" step="0.005" oninput="sizeLive('h',this.value)" onpointerdown="snapBefore()">
+        <input type="number" id="p-h" step="0.01" style="margin-top:5px" onchange="sizeSet('h',this.value)">
+        <div class="g2" style="margin-top:8px">
+            <button class="btn b-light b-xs" onclick="swapWH()">⟲ Girar (W↔H)</button>
+            <button class="btn b-light b-xs" onclick="uniformSize()">Igualar tamaños</button>
+        </div>
+        <div class="g3" style="margin-top:6px">
+            <button class="btn b-light b-xs" onclick="scaleSel(0.95)">−5 %</button>
+            <button class="btn b-light b-xs" onclick="scaleSel(1.05)">+5 %</button>
+            <button class="btn b-light b-xs" onclick="scaleSel(1.20)">+20 %</button>
+        </div>
+        <div class="note">Arrastra también el tirador naranja de la esquina para redimensionar sobre el plano.</div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Posición</div>
+        <div class="g2">
+            <div><label id="x-lbl">X</label><input type="number" step="0.0001" id="p-x"></div>
+            <div><label id="y-lbl">Y</label><input type="number" step="0.0001" id="p-y"></div>
+        </div>
+        <button class="btn b-dark" style="margin-top:6px" onclick="applyXY()">Aplicar X/Y</button>
+        <div class="g3" style="margin-top:7px">
+            <button class="btn b-light b-xs" onclick="nudge(0,-0.1)">↑</button>
+            <button class="btn b-light b-xs" onclick="nudge(0,0.1)">↓</button>
+            <button class="btn b-light b-xs" onclick="nudge(0,0.5)">↓↓</button>
+        </div>
+        <div class="g2" style="margin-top:6px">
+            <button class="btn b-light b-xs" onclick="nudge(-0.1,0)">←</button>
+            <button class="btn b-light b-xs" onclick="nudge(0.1,0)">→</button>
+        </div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Clonar <input type="number" step="0.01" id="p-gap" value="0.30" style="width:70px;padding:3px 5px;font-size:10px"></div>
+        <div class="g3">
+            <div></div>
+            <button class="btn b-green b-xs" onclick="clone('up')">↑ Arriba</button>
+            <div></div>
+        </div>
+        <div class="g3" style="margin-top:6px">
+            <button class="btn b-green b-xs" onclick="clone('left')">← Izq.</button>
+            <button class="btn b-green b-xs" onclick="clone('down')">↓ Abajo</button>
+            <button class="btn b-green b-xs" onclick="clone('right')">Der. →</button>
+        </div>
+        <div class="note">El clon es idéntico (tamaño, tipo, tono). Igual que el plano: <b>a los lados</b> pasa a la letra libre siguiente con los mismos números; <b>arriba/abajo</b> mantiene la letra y salta al siguiente bloque de números libre.</div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Alinear y distribuir</div>
+        <div class="g4">
+            <button class="btn b-light b-xs" onclick="align('left')" title="Alinear a la izquierda">⇤</button>
+            <button class="btn b-light b-xs" onclick="align('cx')" title="Centrar en horizontal">⇹</button>
+            <button class="btn b-light b-xs" onclick="align('right')" title="Alinear a la derecha">⇥</button>
+            <button class="btn b-light b-xs" onclick="distribute('h')" title="Distribuir en horizontal">↔</button>
+        </div>
+        <div class="g4" style="margin-top:6px">
+            <button class="btn b-light b-xs" onclick="align('top')" title="Alinear arriba">⤒</button>
+            <button class="btn b-light b-xs" onclick="align('cy')" title="Centrar en vertical">⇳</button>
+            <button class="btn b-light b-xs" onclick="align('bottom')" title="Alinear abajo">⤓</button>
+            <button class="btn b-light b-xs" onclick="distribute('v')" title="Distribuir en vertical">↕</button>
+        </div>
+    </div>
+
+    <button class="btn b-red" onclick="deleteSel()">🗑 Eliminar selección</button>
+</div>
+
+<!-- ============ BARRA ============ -->
+<div id="bar">
+    <button class="btn b-light" onclick="undo()" id="btn-undo">↩ Deshacer</button>
+    <button class="btn b-light" onclick="redo()" id="btn-redo">↪ Rehacer</button>
+    <button class="btn b-light" onclick="zoomStep(1/1.35)" title="Alejar">−</button>
+    <input type="range" id="zoom-range" min="0" max="1000" value="0" oninput="zoomFromSlider(this.value)">
+    <button class="btn b-light" onclick="zoomStep(1.35)" title="Acercar">+</button>
+    <button class="btn b-light" onclick="fitView()" title="Encajar el plano">⤢</button>
+    <span id="zoom-tag">—</span>
+    <button class="btn b-dark" onclick="doExport(true)">📋 Copiar</button>
+    <button class="btn b-green" onclick="doExport(false)">💾 Descargar mesas.html</button>
+</div>
+
+<div id="viewport">
+    <div id="container">
+        <img id="map-img" alt="Plano">
+        <div id="capa-mesas"></div>
+        <div id="group-outline"><div class="tag"></div></div>
+        <div id="marquee"></div>
+        <div class="handle" id="handle"></div>
+    </div>
+</div>
+
+<textarea id="clip"></textarea>
+
+<script src="config.js"></script>
+<script>
+const C = window.ICONS_CONFIG;
+
+/* ===================== ESTADO ===================== */
+let scale = 0.15;
+let mode = 'island';
+let selection = [];          // array de elementos .mesa
+let showLabels = true;
+const undoStack = [], redoStack = [];
+const MAX_UNDO = 120;
+/* la clave sale del pabellón, así los dos mapas no se pisan el autoguardado */
+const AUTOSAVE_KEY = 'icons-' + C.hallName.toLowerCase().replace(/\s+/g,'') + '-builder-v1';
+
+const viewport = document.getElementById('viewport');
+const container = document.getElementById('container');
+const mapImg = document.getElementById('map-img');
+const capa = document.getElementById('capa-mesas');
+const props = document.getElementById('props');
+const outline = document.getElementById('group-outline');
+const marquee = document.getElementById('marquee');
+const handle = document.getElementById('handle');
+const picker = document.getElementById('picker');
+
+/* ===================== ARRANQUE ===================== */
+mapImg.src = C.mapImage;
+document.getElementById('hall-tag').textContent = C.hallLabel;
+document.title = `ICONS 2027 · ${C.hallName} · Tables Builder Pro`;
+
+function fillSelects(){
+    const cat = document.getElementById('c-cat');
+    C.categories.forEach(c => cat.appendChild(new Option(c.label + ' (' + c.key + ')', c.key)));
+    ['c-type','p-type'].forEach(id => {
+        const s = document.getElementById(id);
+        Object.keys(C.types).forEach(k => s.appendChild(new Option(C.types[k].label, k)));
+    });
+    const tone = document.getElementById('p-tone');
+    C.tones.forEach(t => tone.appendChild(new Option(t.label, t.key)));
+    document.getElementById('c-w').value = C.defaults.horizontal.w;
+    document.getElementById('c-h').value = C.defaults.horizontal.h;
+    document.getElementById('c-gx').value = C.defaults.gapX;
+    document.getElementById('c-gy').value = C.defaults.gapY;
+    if (C.defaults.ring){
+        document.getElementById('c-top').value = C.defaults.ring.top;
+        document.getElementById('c-side').value = C.defaults.ring.side;
+        document.getElementById('c-bottom').value = C.defaults.ring.bottom;
+    }
+    document.getElementById('p-gap').value = C.defaults.cloneGap;
+}
+fillSelects();
+
+window.addEventListener('load', () => {
+    if (mapImg.complete && mapImg.naturalWidth) init();
+    else mapImg.onload = init;
+});
+
+function init(){
+    fitView();
+    viewport.addEventListener('wheel', onWheel, {passive:false});
+    loadFromFile();
+    setInterval(autosave, 8000);
+}
+
+/* ===================== UTILIDADES ===================== */
+function pct(v){ return parseFloat(String(v||'').replace('%','')) || 0; }
+function f4(n){ return Number(n).toFixed(4); }
+function msg(text, kind){
+    const el = document.getElementById('msg');
+    el.className = 'msg ' + kind;
+    el.textContent = text;
+    clearTimeout(msg._t);
+    if (kind === 'ok') msg._t = setTimeout(()=>{ el.className='msg'; }, 5000);
+}
+function mesas(){ return Array.from(capa.querySelectorAll('.mesa')); }
+
+/* ---- islas físicas: mesas contiguas en el plano (union-find) ----
+   Necesario porque la numeración del plano usa la letra como COLUMNA:
+   DIECAST-A son tres islas distintas (A13-24, A25-36, A37-48).      */
+let _clCache = null, _clStamp = '';
+function clusterStamp(){
+    return mesas().map(m => m.dataset.info + m.style.left + m.style.top).join('|');
+}
+function clusters(){
+    const stamp = clusterStamp();
+    if (_clCache && stamp === _clStamp) return _clCache;
+    const ms = mesas();
+    const box = ms.map(m => {
+        const l = pct(m.style.left), t = pct(m.style.top);
+        return { l, t, r: l + pct(m.style.width), b: t + pct(m.style.height) };
+    });
+    const parent = ms.map((_, i) => i);
+    const find = a => { while (parent[a] !== a) a = parent[a] = parent[parent[a]]; return a; };
+    const uni = (a, b) => { a = find(a); b = find(b); if (a !== b) parent[b] = a; };
+    /* El hueco va en píxeles del plano (config.js) y se convierte a % en cada
+       eje: 1 % de ancho y 1 % de alto no son los mismos píxeles. */
+    const gapPx = (C.defaults && C.defaults.islandGapPx) || 110;
+    const TOLX = gapPx / (mapImg.naturalWidth  || 7499) * 100;
+    const TOLY = gapPx / (mapImg.naturalHeight || 5675) * 100;
+    for (let i = 0; i < ms.length; i++){
+        for (let j = i + 1; j < ms.length; j++){
+            const A = box[i], B = box[j];
+            const gx = Math.max(0, Math.max(A.l, B.l) - Math.min(A.r, B.r));
+            const gy = Math.max(0, Math.max(A.t, B.t) - Math.min(A.b, B.b));
+            if (gx < TOLX && gy < TOLY) uni(i, j);
+        }
+    }
+    const map = new Map();
+    ms.forEach((m, i) => {
+        const k = find(i);
+        if (!map.has(k)) map.set(k, []);
+        map.get(k).push(m);
+    });
+    const out = [...map.values()].map(list => list.sort(byId));
+    out.sort((a, b) => {
+        const A = bbox(a), B = bbox(b);
+        return (A.top - B.top) || (A.left - B.left);
+    });
+    _clCache = out; _clStamp = stamp;
+    return out;
+}
+function clusterOf(el){
+    for (const c of clusters()) if (c.includes(el)) return c;
+    return [el];
+}
+function clusterLabel(c){
+    const key = C.groupKey(c[0].dataset.info);
+    const nums = c.map(m => C.tableNumber(m.dataset.info)).filter(n => n !== null);
+    if (!nums.length) return `${key} · ${c.length} mesas`;
+    return `${key} · ${Math.min(...nums)}-${Math.max(...nums)} · ${c.length} mesas`;
+}
+
+function groups(){
+    const m = new Map();
+    mesas().forEach(el => {
+        const k = C.groupKey(el.dataset.info);
+        if (!m.has(k)) m.set(k, []);
+        m.get(k).push(el);
+    });
+    m.forEach(a => a.sort(byId));
+    return m;
+}
+function byId(a,b){
+    const ka = C.groupKey(a.dataset.info), kb = C.groupKey(b.dataset.info);
+    if (ka !== kb) return ka.localeCompare(kb,'es',{numeric:true});
+    return (C.tableNumber(a.dataset.info) ?? 1e9) - (C.tableNumber(b.dataset.info) ?? 1e9);
+}
+function bbox(list){
+    if (!list.length) return null;
+    let l=Infinity,t=Infinity,r=-Infinity,b=-Infinity;
+    list.forEach(m=>{
+        const L=pct(m.style.left), T=pct(m.style.top), W=pct(m.style.width), H=pct(m.style.height);
+        l=Math.min(l,L); t=Math.min(t,T); r=Math.max(r,L+W); b=Math.max(b,T+H);
+    });
+    return {left:l, top:t, width:r-l, height:b-t, right:r, bottom:b};
+}
+
+/* ===================== PINTAR MESA ===================== */
+function paint(el){
+    const type = el.dataset.type || 'collector';
+    const tone = el.dataset.tone || 'base';
+    const custom = el.dataset.color || '';
+    const hex = C.colorFor(type, tone, custom);
+    el.style.backgroundColor = C.rgba(hex, .55);
+    el.style.borderColor = C.shade(hex, .28);
+}
+
+function makeMesa(o){
+    const el = document.createElement('div');
+    el.className = 'mesa' + (showLabels ? '' : ' hide-label');
+    el.dataset.info = String(o.id || 'SIN-ID').trim().toUpperCase();
+    el.dataset.type = o.type || 'collector';
+    el.dataset.tone = o.tone || 'base';
+    if (o.color) el.dataset.color = o.color;
+    el.style.left = f4(o.l) + '%';
+    el.style.top = f4(o.t) + '%';
+    el.style.width = f4(o.w) + '%';
+    el.style.height = f4(o.h) + '%';
+    el.textContent = label(el.dataset.info);
+    paint(el);
+    bind(el);
+    return el;
+}
+function label(id){
+    const n = C.tableNumber(id);
+    if (n !== null) return String(n);
+    const p = String(id).split('-');
+    return p[p.length-1] || '';
+}
+
+function bind(el){
+    el.addEventListener('mousedown', e => {
+        if (e.button !== 0) return;
+        e.preventDefault(); e.stopPropagation();
+        const targets = mode === 'island' ? clusterOf(el) : [el];
+        if (e.shiftKey){
+            const allIn = targets.every(t => selection.includes(t));
+            selection = allIn ? selection.filter(t => !targets.includes(t))
+                              : selection.concat(targets.filter(t => !selection.includes(t)));
+            refreshSel();
+        } else if (!selection.includes(el)) {
+            selection = targets.slice();
+            refreshSel();
+        }
+        startMove(e);
+    });
+}
+
+/* ===================== SELECCIÓN ===================== */
+function refreshSel(){
+    mesas().forEach(m => m.classList.toggle('sel', selection.includes(m)));
+    if (!selection.length){
+        props.classList.remove('on');
+        outline.style.display = 'none';
+        handle.classList.remove('on');
+        refreshPicker();
+        return;
+    }
+    props.classList.add('on');
+    const keys = new Set(selection.map(m => C.groupKey(m.dataset.info)));
+    const one = selection.length === 1;
+    const cl = clusters().filter(c => c.some(m => selection.includes(m)));
+    const fullIsland = cl.length === 1 && cl[0].length === selection.length;
+
+    document.getElementById('sel-title').textContent =
+        one ? selection[0].dataset.info
+            : (fullIsland ? 'Isla ' + clusterLabel(cl[0]) : selection.length + ' mesas seleccionadas');
+    document.getElementById('sel-sub').textContent =
+        one ? 'Mesa individual'
+            : `${selection.length} mesas · ${cl.length} isla${cl.length>1?'s':''} · prefijo${keys.size>1?'s':''} ${[...keys].join(', ')}`;
+    document.getElementById('name-lbl').textContent = one ? 'ID exacto de la mesa' : 'Prefijo de isla';
+    document.getElementById('p-name').value = one ? selection[0].dataset.info : [...keys][0];
+
+    const t = selection[0].dataset.type || 'collector';
+    const tn = selection[0].dataset.tone || 'base';
+    document.getElementById('p-type').value = selection.every(m=>m.dataset.type===t) ? t : t;
+    document.getElementById('p-tone').value = selection.every(m=>m.dataset.tone===tn) ? tn : tn;
+    document.getElementById('p-color').value = selection[0].dataset.color || C.colorFor(t, tn, '');
+
+    syncSizeInputs();
+    syncPosInputs();
+    drawOutline();
+    drawHandle();
+    refreshPicker();
+}
+
+function syncSizeInputs(){
+    if (!selection.length) return;
+    const w = pct(selection[0].style.width), h = pct(selection[0].style.height);
+    const sameW = selection.every(m => Math.abs(pct(m.style.width)-w) < 0.0005);
+    const sameH = selection.every(m => Math.abs(pct(m.style.height)-h) < 0.0005);
+    document.getElementById('p-w').value = w.toFixed(3);
+    document.getElementById('p-h').value = h.toFixed(3);
+    document.getElementById('p-w-range').value = Math.min(6, Math.max(0.05, w));
+    document.getElementById('p-h-range').value = Math.min(6, Math.max(0.05, h));
+    document.getElementById('w-val').textContent = sameW ? w.toFixed(3)+'%' : 'varios';
+    document.getElementById('h-val').textContent = sameH ? h.toFixed(3)+'%' : 'varios';
+    const px = (v, dim) => Math.round(v/100 * (dim === 'w' ? mapImg.naturalWidth : mapImg.naturalHeight));
+    document.getElementById('size-tag').textContent = `${px(w,'w')}×${px(h,'h')} px`;
+}
+function syncPosInputs(){
+    const b = bbox(selection);
+    if (!b) return;
+    const one = selection.length === 1;
+    document.getElementById('x-lbl').textContent = one ? 'X de la mesa' : 'X del bloque';
+    document.getElementById('y-lbl').textContent = one ? 'Y de la mesa' : 'Y del bloque';
+    document.getElementById('p-x').value = b.left.toFixed(4);
+    document.getElementById('p-y').value = b.top.toFixed(4);
+}
+function drawOutline(){
+    const b = bbox(selection);
+    if (!b || selection.length < 2){ outline.style.display='none'; return; }
+    outline.style.display = 'block';
+    outline.style.left = f4(b.left)+'%';
+    outline.style.top = f4(b.top)+'%';
+    outline.style.width = f4(b.width)+'%';
+    outline.style.height = f4(b.height)+'%';
+    outline.querySelector('.tag').textContent = `${selection.length} mesas`;
+    outline.querySelector('.tag').style.transform = `translateY(-100%) scale(${1/scale})`;
+    outline.querySelector('.tag').style.transformOrigin = 'left bottom';
+}
+function drawHandle(){
+    const b = bbox(selection);
+    if (!b){ handle.classList.remove('on'); return; }
+    handle.classList.add('on');
+    handle.style.left = f4(b.right)+'%';
+    handle.style.top = f4(b.bottom)+'%';
+    handle.style.transform = `translate(-50%,-50%) scale(${1/scale})`;
+}
+function deselect(){ selection = []; refreshSel(); }
+
+function selectAll(){ selection = mesas(); refreshSel(); }
+
+function refreshPicker(){
+    const cl = clusters();
+    const cur = picker.value;
+    picker.innerHTML = '';
+    if (!cl.length){ picker.innerHTML = '<option value="">— sin mesas cargadas —</option>'; stats(); return; }
+    picker.appendChild(new Option(`— elegir isla (${cl.length}) —`, ''));
+    const keys = [];
+    cl.forEach(c => {
+        const v = c[0].dataset.info;
+        keys.push(v);
+        picker.appendChild(new Option(clusterLabel(c), v));
+    });
+    picker.value = keys.includes(cur) ? cur : '';
+    stats();
+}
+function pickIsland(){
+    const v = picker.value;
+    if (!v) return;
+    const c = clusters().find(c => c[0].dataset.info === v);
+    if (!c) return;
+    selection = c.slice();
+    refreshSel();
+    centerOnSel();
+}
+
+function stats(){
+    const all = mesas();
+    document.getElementById('stat-total').textContent = all.length;
+    const box = document.getElementById('stats');
+    const byCat = {}, byType = {};
+    all.forEach(m => {
+        const cat = C.parseId(m.dataset.info).cat || '—';
+        byCat[cat] = (byCat[cat]||0)+1;
+        const t = m.dataset.type || 'collector';
+        byType[t] = (byType[t]||0)+1;
+    });
+    let html = '';
+    Object.keys(byCat).sort().forEach(k => {
+        html += `<div class="stat-row"><span>${k}</span><b>${byCat[k]}</b></div>`;
+    });
+    html += '<div style="height:6px"></div>';
+    Object.keys(byType).forEach(k => {
+        const col = C.colorFor(k,'base','');
+        const p = C.priceFor(k);
+        html += `<div class="stat-row"><span><span class="chip" style="background:${col}"></span>${C.types[k]?C.types[k].label:k}</span><b>${byType[k]} · ${p.early||p.base}</b></div>`;
+    });
+    box.innerHTML = html || '<div class="stat-row"><span>Sin mesas</span><b>0</b></div>';
+}
+
+/* ===================== UNDO / REDO ===================== */
+function serialize(){
+    return mesas().sort(byId).map(m => ({
+        id:m.dataset.info, type:m.dataset.type, tone:m.dataset.tone, color:m.dataset.color||'',
+        l:pct(m.style.left), t:pct(m.style.top), w:pct(m.style.width), h:pct(m.style.height)
+    }));
+}
+function deserialize(data, keepIds){
+    const sel = new Set(keepIds || []);
+    capa.innerHTML = '';
+    selection = [];
+    data.forEach(o => {
+        const el = makeMesa(o);
+        capa.appendChild(el);
+        if (sel.has(o.id)) selection.push(el);
+    });
+    refreshSel();
+}
+function snap(){
+    const state = JSON.stringify(serialize());
+    if (undoStack.length && undoStack[undoStack.length-1] === state) return;
+    undoStack.push(state);
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+    redoStack.length = 0;
+    updateBar();
+}
+function undo(){
+    if (!undoStack.length) return msg('No hay nada que deshacer.','err');
+    redoStack.push(JSON.stringify(serialize()));
+    deserialize(JSON.parse(undoStack.pop()), selection.map(m=>m.dataset.info));
+    updateBar(); refreshPicker();
+    msg('Deshecho.','ok');
+}
+function redo(){
+    if (!redoStack.length) return msg('No hay nada que rehacer.','err');
+    undoStack.push(JSON.stringify(serialize()));
+    deserialize(JSON.parse(redoStack.pop()), selection.map(m=>m.dataset.info));
+    updateBar(); refreshPicker();
+    msg('Rehecho.','ok');
+}
+function updateBar(){
+    document.getElementById('btn-undo').disabled = !undoStack.length;
+    document.getElementById('btn-redo').disabled = !redoStack.length;
+    document.getElementById('btn-undo').textContent = '↩ Deshacer' + (undoStack.length?` (${undoStack.length})`:'');
+}
+
+/* ===================== AUTOGUARDADO ===================== */
+function autosave(){
+    try { localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({t:Date.now(), data:serialize()})); } catch(e){}
+}
+function restoreAuto(){
+    try {
+        const raw = localStorage.getItem(AUTOSAVE_KEY);
+        if (!raw) return msg('No hay sesión guardada en este navegador.','err');
+        const o = JSON.parse(raw);
+        if (!o.data || !o.data.length) return msg('La sesión guardada está vacía.','err');
+        snap();
+        deserialize(o.data);
+        refreshPicker();
+        msg(`Sesión restaurada: ${o.data.length} mesas (${new Date(o.t).toLocaleString('es-ES')}).`,'ok');
+    } catch(e){ msg('No he podido restaurar la sesión.','err'); }
+}
+
+/* ===================== IMPORTAR ===================== */
+async function loadFromFile(){
+    try {
+        const r = await fetch('mesas.html?v=' + Date.now(), {cache:'no-store'});
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        parseInto(await r.text(), 'mesas.html');
+    } catch(e){
+        msg('No he podido cargar mesas.html automáticamente (' + e.message + '). Usa el pegado manual.','err');
+    }
+}
+function loadFromText(){
+    const v = document.getElementById('paste').value;
+    if (!v.trim()) return msg('Pega primero el contenido.','err');
+    parseInto(v, 'texto pegado');
+}
+function parseInto(html, source){
+    _clCache = null;
+    const h = document.createElement('div');
+    h.innerHTML = html;
+    const found = Array.from(h.querySelectorAll('.mesa'));
+    if (!found.length) return msg('No he encontrado ningún <div class="mesa">.','err');
+    snap();
+    capa.innerHTML = '';
+    selection = [];
+    found.forEach(el => {
+        const id = (el.dataset.info || 'SIN-ID').trim();
+        capa.appendChild(makeMesa({
+            id,
+            type: el.dataset.type || inferType(id),
+            tone: el.dataset.tone || 'base',
+            color: el.dataset.color || '',
+            l: pct(el.style.left), t: pct(el.style.top),
+            w: pct(el.style.width) || 1, h: pct(el.style.height) || .5
+        }));
+    });
+    refreshSel(); refreshPicker();
+    msg(`${source}: ${found.length} mesas · ${groups().size} islas.`,'ok');
+}
+/* Compatibilidad con mesas.html antiguos sin data-type */
+function inferType(id){
+    return /COMMERCIAL/i.test(id) ? 'commercial' : 'collector';
+}
+function clearAll(){
+    _clCache = null;
+    if (!confirm('¿Vaciar todas las mesas del builder?')) return;
+    snap(); capa.innerHTML=''; selection=[]; refreshSel(); refreshPicker();
+    msg('Builder vacío.','ok');
+}
+
+/* ===================== CREAR ===================== */
+function shapeChanged(){
+    const s = document.getElementById('c-shape').value;
+    document.getElementById('ring-fields').style.display = s==='ring' ? 'grid' : 'none';
+    document.getElementById('count-fields').style.display = (s==='row'||s==='col'||s==='grid') ? 'grid' : 'none';
+    document.getElementById('ring-note').style.display = s==='ring' ? 'block' : 'none';
+    if (s==='row'){ document.getElementById('c-cols').value=6; document.getElementById('c-rows').value=1; }
+    if (s==='col'){ document.getElementById('c-cols').value=1; document.getElementById('c-rows').value=6; }
+}
+shapeChanged();
+
+function viewCenterPct(){
+    const vr = viewport.getBoundingClientRect();
+    const mr = mapImg.getBoundingClientRect();
+    return {
+        x: ((vr.left + vr.width/2 - mr.left) / mr.width) * 100,
+        y: ((vr.top + vr.height/2 - mr.top) / mr.height) * 100
+    };
+}
+
+function spawn(){
+    const shape = document.getElementById('c-shape').value;
+    const cat = document.getElementById('c-cat').value;
+    const zone = document.getElementById('c-zone').value.trim().toUpperCase() || 'A';
+    const type = document.getElementById('c-type').value;
+    const w = parseFloat(document.getElementById('c-w').value) || 1.1;
+    const h = parseFloat(document.getElementById('c-h').value) || .5;
+    const gx = parseFloat(document.getElementById('c-gx').value) || 0;
+    const gy = parseFloat(document.getElementById('c-gy').value) || 0;
+    const prefix = `${cat}-${zone}`;
+    const c = viewCenterPct();
+    const out = [];
+    let n = 0;
+    const push = (l,t,W,H) => out.push({id:`${prefix}-${++n}`, type, tone:'base', l, t, w:W, h:H});
+
+    if (shape === 'single'){
+        out.push({id:prefix+'-1', type, tone:'base', l:c.x-w/2, t:c.y-h/2, w, h});
+    } else if (shape === 'row' || shape === 'col' || shape === 'grid'){
+        const cols = Math.max(1, parseInt(document.getElementById('c-cols').value)||1);
+        const rows = Math.max(1, parseInt(document.getElementById('c-rows').value)||1);
+        const totalW = cols*w + (cols-1)*gx;
+        const totalH = rows*h + (rows-1)*gy;
+        const l0 = c.x - totalW/2, t0 = c.y - totalH/2;
+        for (let r=0;r<rows;r++) for (let k=0;k<cols;k++)
+            push(l0 + k*(w+gx), t0 + r*(h+gy), w, h);
+    } else { /* ring */
+        const top = Math.max(0, parseInt(document.getElementById('c-top').value)||0);
+        const bottom = Math.max(0, parseInt(document.getElementById('c-bottom').value)||0);
+        const side = Math.max(0, parseInt(document.getElementById('c-side').value)||0);
+        const vw = C.defaults.vertical.w;    // ancho real de mesa vertical
+        const vh = C.defaults.vertical.h;    // alto  real de mesa vertical
+        const blockW = Math.max(top, bottom)*w + (Math.max(top,bottom)-1)*gx;
+        const blockH = h + gy + side*(vh+gy) + gy + h;
+        const l0 = c.x - blockW/2, t0 = c.y - blockH/2;
+        for (let i=0;i<top;i++) push(l0 + i*(w+gx), t0, w, h);
+        for (let i=0;i<side;i++) push(l0 + blockW - vw, t0 + h + gy + i*(vh+gy), vw, vh);
+        for (let i=0;i<bottom;i++) push(l0 + (bottom-1-i)*(w+gx), t0 + blockH - h, w, h);
+        for (let i=0;i<side;i++) push(l0, t0 + blockH - h - gy - (i+1)*(vh+gy) + gy, vw, vh);
+    }
+
+    if (!out.length) return msg('Configura al menos una mesa.','err');
+    snap();
+    _clCache = null;
+    selection = out.map(o => { const el = makeMesa(o); capa.appendChild(el); return el; });
+    refreshSel(); refreshPicker();
+    msg(`Creadas ${out.length} mesas en ${prefix}.`,'ok');
+    /* siguiente letra lista para el próximo bloque */
+    document.getElementById('c-zone').value = nextLetter(zone);
+}
+function nextLetter(z){
+    return z.replace(/([A-Z])(?!.*[A-Z])/, ch => ch === 'Z' ? 'AA' : String.fromCharCode(ch.charCodeAt(0)+1)) || 'B';
+}
+
+/* ===================== NOMBRES ===================== */
+function applyName(){
+    if (!selection.length) return;
+    const v = document.getElementById('p-name').value.trim().toUpperCase();
+    if (!v) return;
+    snap();
+    if (selection.length === 1){
+        selection[0].dataset.info = v;
+        selection[0].textContent = label(v);
+    } else {
+        selection.slice().sort(byId).forEach((m,i) => {
+            const n = C.tableNumber(m.dataset.info) ?? (i+1);
+            m.dataset.info = `${v}-${n}`;
+            m.textContent = label(m.dataset.info);
+        });
+    }
+    refreshSel(); refreshPicker();
+    msg('Nombre aplicado.','ok');
+}
+function renumber(start){
+    if (!selection.length) return;
+    snap();
+    const key = C.groupKey(selection[0].dataset.info);
+    selection.slice().sort((a,b)=>{
+        const A=bbox([a]), B=bbox([b]);
+        return (A.top - B.top) || (A.left - B.left);
+    }).forEach((m,i) => {
+        m.dataset.info = `${key}-${start + i}`;
+        m.textContent = label(m.dataset.info);
+    });
+    refreshSel(); refreshPicker();
+    msg(`Renumerado desde ${start}.`,'ok');
+}
+function renumberAsk(){
+    const v = prompt('¿Desde qué número renumero la selección?', '1');
+    const n = parseInt(v,10);
+    if (Number.isFinite(n)) renumber(n);
+}
+
+/* ===================== ASPECTO ===================== */
+function applyType(){
+    if (!selection.length) return;
+    snap();
+    const v = document.getElementById('p-type').value;
+    selection.forEach(m => { m.dataset.type = v; paint(m); });
+    stats();
+    msg('Tipo aplicado: ' + C.types[v].label + '.','ok');
+}
+function applyTone(){
+    if (!selection.length) return;
+    snap();
+    const v = document.getElementById('p-tone').value;
+    selection.forEach(m => { m.dataset.tone = v; paint(m); });
+    msg('Tono aplicado.','ok');
+}
+function applyColor(){
+    if (!selection.length) return;
+    const v = document.getElementById('p-color').value;
+    selection.forEach(m => { m.dataset.color = v; paint(m); });
+}
+function clearColor(){
+    if (!selection.length) return;
+    snap();
+    selection.forEach(m => { delete m.dataset.color; paint(m); });
+    document.getElementById('p-color').value = C.colorFor(selection[0].dataset.type, selection[0].dataset.tone, '');
+    msg('Color propio eliminado.','ok');
+}
+
+/* ===================== TAMAÑO ===================== */
+let sizeSnapped = false;
+function snapBefore(){ if (!sizeSnapped){ snap(); sizeSnapped = true; } }
+document.addEventListener('pointerup', ()=>{ sizeSnapped = false; });
+
+function sizeLive(dim, value){
+    if (!selection.length) return;
+    const v = Math.max(0.02, parseFloat(value)||0.02);
+    selection.forEach(m => { m.style[dim === 'w' ? 'width' : 'height'] = f4(v)+'%'; });
+    document.getElementById(dim === 'w' ? 'p-w' : 'p-h').value = v.toFixed(3);
+    document.getElementById(dim === 'w' ? 'w-val' : 'h-val').textContent = v.toFixed(3)+'%';
+    drawOutline(); drawHandle(); syncSizeInputs();
+}
+function sizeSet(dim, value){
+    if (!selection.length) return;
+    snap();
+    sizeLive(dim, value);
+}
+function swapWH(){
+    if (!selection.length) return;
+    snap();
+    selection.forEach(m => {
+        const w = pct(m.style.width), h = pct(m.style.height);
+        m.style.width = f4(h)+'%'; m.style.height = f4(w)+'%';
+    });
+    syncSizeInputs(); drawOutline(); drawHandle();
+    msg('Mesas giradas.','ok');
+}
+function uniformSize(){
+    if (selection.length < 2) return msg('Selecciona 2 o más mesas.','err');
+    snap();
+    const w = pct(selection[0].style.width), h = pct(selection[0].style.height);
+    selection.forEach(m => { m.style.width = f4(w)+'%'; m.style.height = f4(h)+'%'; });
+    syncSizeInputs(); drawOutline(); drawHandle();
+    msg('Tamaños igualados a la primera mesa.','ok');
+}
+function scaleSel(k){
+    if (!selection.length) return;
+    snap();
+    selection.forEach(m => {
+        const w = pct(m.style.width), h = pct(m.style.height);
+        const l = pct(m.style.left), t = pct(m.style.top);
+        const nw = w*k, nh = h*k;
+        m.style.width = f4(nw)+'%'; m.style.height = f4(nh)+'%';
+        m.style.left = f4(l - (nw-w)/2)+'%'; m.style.top = f4(t - (nh-h)/2)+'%';
+    });
+    syncSizeInputs(); syncPosInputs(); drawOutline(); drawHandle();
+}
+
+/* Tirador de esquina */
+handle.addEventListener('mousedown', e => {
+    if (!selection.length) return;
+    e.preventDefault(); e.stopPropagation();
+    snap();
+    const b0 = bbox(selection);
+    const start = mouseToPct(e);
+    const initial = selection.map(m => ({
+        el:m, l:pct(m.style.left), t:pct(m.style.top), w:pct(m.style.width), h:pct(m.style.height)
+    }));
+    const move = ev => {
+        const now = mouseToPct(ev);
+        const kx = Math.max(0.08, (now.x - b0.left) / Math.max(0.0001, b0.width));
+        const ky = Math.max(0.08, (now.y - b0.top) / Math.max(0.0001, b0.height));
+        initial.forEach(it => {
+            it.el.style.left  = f4(b0.left + (it.l - b0.left) * kx) + '%';
+            it.el.style.top   = f4(b0.top  + (it.t - b0.top ) * ky) + '%';
+            it.el.style.width = f4(Math.max(0.02, it.w * kx)) + '%';
+            it.el.style.height= f4(Math.max(0.02, it.h * ky)) + '%';
+        });
+        drawOutline(); drawHandle(); syncSizeInputs(); syncPosInputs();
+    };
+    const up = () => {
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', up);
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+});
+
+/* ===================== POSICIÓN ===================== */
+function applyXY(){
+    if (!selection.length) return;
+    const b = bbox(selection);
+    const nx = parseFloat(document.getElementById('p-x').value);
+    const ny = parseFloat(document.getElementById('p-y').value);
+    if (!Number.isFinite(nx) || !Number.isFinite(ny)) return msg('X/Y no válidos.','err');
+    snap();
+    const dx = nx - b.left, dy = ny - b.top;
+    selection.forEach(m => {
+        m.style.left = f4(pct(m.style.left)+dx)+'%';
+        m.style.top  = f4(pct(m.style.top )+dy)+'%';
+    });
+    syncPosInputs(); drawOutline(); drawHandle();
+    msg('Posición aplicada.','ok');
+}
+function nudge(dx,dy){
+    if (!selection.length) return;
+    snap();
+    selection.forEach(m => {
+        m.style.left = f4(pct(m.style.left)+dx)+'%';
+        m.style.top  = f4(pct(m.style.top )+dy)+'%';
+    });
+    syncPosInputs(); drawOutline(); drawHandle();
+}
+function align(how){
+    if (selection.length < 2) return msg('Selecciona 2 o más mesas.','err');
+    snap();
+    const b = bbox(selection);
+    selection.forEach(m => {
+        const w = pct(m.style.width), h = pct(m.style.height);
+        if (how==='left')   m.style.left = f4(b.left)+'%';
+        if (how==='right')  m.style.left = f4(b.right - w)+'%';
+        if (how==='cx')     m.style.left = f4(b.left + b.width/2 - w/2)+'%';
+        if (how==='top')    m.style.top  = f4(b.top)+'%';
+        if (how==='bottom') m.style.top  = f4(b.bottom - h)+'%';
+        if (how==='cy')     m.style.top  = f4(b.top + b.height/2 - h/2)+'%';
+    });
+    syncPosInputs(); drawOutline(); drawHandle();
+    msg('Alineado.','ok');
+}
+function distribute(axis){
+    if (selection.length < 3) return msg('Selecciona 3 o más mesas.','err');
+    snap();
+    const b = bbox(selection);
+    const list = selection.slice().sort((x,y) =>
+        axis==='h' ? pct(x.style.left)-pct(y.style.left) : pct(x.style.top)-pct(y.style.top));
+    const sum = list.reduce((a,m)=> a + pct(axis==='h'?m.style.width:m.style.height), 0);
+    const gap = ((axis==='h'?b.width:b.height) - sum) / (list.length-1);
+    let cursor = axis==='h' ? b.left : b.top;
+    list.forEach(m => {
+        if (axis==='h'){ m.style.left = f4(cursor)+'%'; cursor += pct(m.style.width) + gap; }
+        else           { m.style.top  = f4(cursor)+'%'; cursor += pct(m.style.height)+ gap; }
+    });
+    syncPosInputs(); drawOutline(); drawHandle();
+    msg(`Distribuido (hueco ${gap.toFixed(3)} %).`,'ok');
+}
+
+/* ===================== CLONAR ===================== */
+function clone(dir){
+    if (!selection.length) return;
+    snap();
+    const gap = parseFloat(document.getElementById('p-gap').value) || 0;
+    const b = bbox(selection);
+    let dx=0, dy=0;
+    if (dir==='right') dx =  b.width + gap;
+    if (dir==='left')  dx = -(b.width + gap);
+    if (dir==='down')  dy =  b.height + gap;
+    if (dir==='up')    dy = -(b.height + gap);
+
+    const keys = new Set(selection.map(m => C.groupKey(m.dataset.info)));
+    const sameKey = keys.size === 1;
+    const oldKey = [...keys][0];
+    const existing = new Set(mesas().map(m => m.dataset.info));
+    const horizontal = (dir === 'left' || dir === 'right');
+    const nums = selection.map(m => C.tableNumber(m.dataset.info)).filter(n => n !== null);
+
+    /* Igual que el plano: al lado = letra siguiente y mismos números;
+       arriba/abajo = misma letra y el siguiente bloque de números libre. */
+    let newKey = oldKey, numShift = 0;
+    if (sameKey && mode === 'island'){
+        if (horizontal){
+            newKey = freeKey(oldKey);
+        } else if (nums.length){
+            const size = selection.length;
+            const order = dir === 'up' ? [1,-1,2,-2,3,-3] : [-1,1,-2,2,-3,3];
+            for (const k of order){
+                const off = k * size;
+                if (nums.every(n => n + off > 0 && !existing.has(`${oldKey}-${n+off}`))){ numShift = off; break; }
+            }
+            if (!numShift){
+                let off = size;
+                while (nums.some(n => existing.has(`${oldKey}-${n+off}`))) off += size;
+                numShift = off;
+            }
+        }
+    }
+
+    const clones = selection.slice().sort(byId).map((m,i) => {
+        let id = m.dataset.info;
+        if (sameKey && mode === 'island' && (newKey !== oldKey || numShift)){
+            const n = (C.tableNumber(id) ?? (i+1)) + numShift;
+            id = `${newKey}-${n}`;
+            while (existing.has(id)) id = `${newKey}-${(parseInt(id.split('-').pop(),10)+1)}`;
+        } else {
+            let n = (C.tableNumber(id) ?? 0);
+            let cand;
+            do { n++; cand = `${C.groupKey(id)}-${n}`; } while (existing.has(cand));
+            id = cand;
+        }
+        existing.add(id);
+        const el = makeMesa({
+            id, type:m.dataset.type, tone:m.dataset.tone, color:m.dataset.color||'',
+            l:pct(m.style.left)+dx, t:pct(m.style.top)+dy,
+            w:pct(m.style.width), h:pct(m.style.height)
+        });
+        capa.appendChild(el);
+        return el;
+    });
+    selection = clones;
+    _clCache = null;
+    refreshSel(); refreshPicker();
+    const what = newKey !== oldKey ? ' como ' + newKey
+               : (numShift ? ` con números ${numShift>0?'+':''}${numShift}` : '');
+    msg(`Clonadas ${clones.length} mesas${what}.`,'ok');
+}
+function freeKey(key){
+    const g = groups();
+    let candidate = key;
+    for (let i=0;i<40;i++){
+        candidate = candidate.replace(/([A-Z])(?!.*[A-Z])/, ch => ch==='Z' ? 'AA' : String.fromCharCode(ch.charCodeAt(0)+1));
+        if (!g.has(candidate)) return candidate;
+    }
+    return key + '-COPIA';
+}
+
+/* ===================== BORRAR ===================== */
+function deleteSel(){
+    if (!selection.length) return;
+    if (selection.length > 1 && !confirm(`¿Eliminar ${selection.length} mesas?`)) return;
+    snap();
+    selection.forEach(m => m.remove());
+    selection = []; _clCache = null;
+    refreshSel(); refreshPicker();
+    msg('Selección eliminada.','ok');
+}
+
+/* ===================== MOVER CON RATÓN ===================== */
+let moving = null;
+function mouseToPct(e){
+    const r = mapImg.getBoundingClientRect();
+    return { x:((e.clientX-r.left)/r.width)*100, y:((e.clientY-r.top)/r.height)*100 };
+}
+function startMove(e){
+    snap();
+    moving = {
+        start: mouseToPct(e),
+        items: selection.map(m => ({el:m, l:pct(m.style.left), t:pct(m.style.top)}))
+    };
+}
+document.addEventListener('mousemove', e => {
+    if (!moving) return;
+    e.preventDefault();
+    const now = mouseToPct(e);
+    const dx = now.x - moving.start.x, dy = now.y - moving.start.y;
+    moving.items.forEach(it => {
+        it.el.style.left = f4(it.l+dx)+'%';
+        it.el.style.top  = f4(it.t+dy)+'%';
+    });
+    drawOutline(); drawHandle(); syncPosInputs();
+});
+document.addEventListener('mouseup', () => { moving = null; });
+
+/* ===================== PAN + MARCO ===================== */
+let panning = null, marking = null;
+viewport.addEventListener('mousedown', e => {
+    if (e.target.closest('.mesa') || e.target === handle) return;
+    if (e.shiftKey){
+        const p = mouseToPct(e);
+        marking = {x0:p.x, y0:p.y, additive:true};
+        marquee.style.display = 'block';
+        marquee.style.left = f4(p.x)+'%'; marquee.style.top = f4(p.y)+'%';
+        marquee.style.width='0%'; marquee.style.height='0%';
+        e.preventDefault();
+        return;
+    }
+    panning = {x:e.clientX, y:e.clientY, sl:viewport.scrollLeft, st:viewport.scrollTop};
+    viewport.classList.add('panning');
+    if (!e.target.closest('#palette') && !e.target.closest('#props')) deselect();
+});
+document.addEventListener('mousemove', e => {
+    if (panning){
+        viewport.scrollLeft = panning.sl - (e.clientX - panning.x);
+        viewport.scrollTop  = panning.st - (e.clientY - panning.y);
+        return;
+    }
+    if (marking){
+        const p = mouseToPct(e);
+        const l = Math.min(p.x, marking.x0), t = Math.min(p.y, marking.y0);
+        const w = Math.abs(p.x-marking.x0), h = Math.abs(p.y-marking.y0);
+        marquee.style.left=f4(l)+'%'; marquee.style.top=f4(t)+'%';
+        marquee.style.width=f4(w)+'%'; marquee.style.height=f4(h)+'%';
+        marking.rect = {l,t,r:l+w,b:t+h};
+    }
+});
+document.addEventListener('mouseup', () => {
+    if (panning){ panning=null; viewport.classList.remove('panning'); }
+    if (marking){
+        marquee.style.display='none';
+        const r = marking.rect;
+        if (r && (r.r-r.l > 0.05 || r.b-r.t > 0.05)){
+            const hits = mesas().filter(m => {
+                const L=pct(m.style.left), T=pct(m.style.top);
+                const R=L+pct(m.style.width), B=T+pct(m.style.height);
+                return !(R < r.l || L > r.r || B < r.t || T > r.b);
+            });
+            let picked = hits;
+            if (mode === 'island'){
+                const set = new Set();
+                clusters().forEach(c => { if (c.some(m => hits.includes(m))) c.forEach(m => set.add(m)); });
+                picked = [...set];
+            }
+            selection = picked;
+            refreshSel();
+            msg(`${selection.length} mesas seleccionadas con el marco.`,'ok');
+        }
+        marking = null;
+    }
+});
+viewport.addEventListener('keydown', e => e.stopPropagation());
+document.addEventListener('keyup', e => { if (!e.shiftKey) viewport.classList.remove('marquee-ready'); });
+document.addEventListener('keydown', e => { if (e.shiftKey) viewport.classList.add('marquee-ready'); });
+
+/* ===================== ZOOM ===================== */
+function onWheel(e){
+    e.preventDefault();
+    const before = mouseToPct(e);
+    const k = e.deltaY > 0 ? 0.88 : 1.14;
+    const ns = Math.min(ZMAX, Math.max(ZMIN, scale * k));
+    if (ns === scale) return;
+    scale = ns;
+    applyScale();
+    const vr = viewport.getBoundingClientRect();
+    viewport.scrollLeft = (before.x/100)*mapImg.naturalWidth*scale - (e.clientX - vr.left);
+    viewport.scrollTop  = (before.y/100)*mapImg.naturalHeight*scale - (e.clientY - vr.top);
+}
+const ZMIN = 0.03, ZMAX = 8;
+function applyScale(){
+    container.style.transform = `scale(${scale})`;
+    document.getElementById('zoom-tag').textContent = Math.round(scale*100) + ' %';
+    const r = document.getElementById('zoom-range');
+    if (r) r.value = Math.round(1000 * Math.log(scale/ZMIN) / Math.log(ZMAX/ZMIN));
+    drawHandle(); drawOutline();
+}
+function zoomFromSlider(v){
+    const z = ZMIN * Math.pow(ZMAX/ZMIN, v/1000);
+    zoomAtCenter(z);
+}
+function zoomStep(k){ zoomAtCenter(scale * k); }
+function zoomAtCenter(z){
+    const nz = Math.min(ZMAX, Math.max(ZMIN, z));
+    const vr = viewport.getBoundingClientRect();
+    const cx = 360 + (viewport.clientWidth - 360 - 340)/2;
+    const cy = (viewport.clientHeight - 130)/2;
+    const before = mouseToPct({clientX: vr.left + cx, clientY: vr.top + cy});
+    scale = nz;
+    applyScale();
+    viewport.scrollLeft = (before.x/100)*mapImg.naturalWidth*scale - cx;
+    viewport.scrollTop  = (before.y/100)*mapImg.naturalHeight*scale - cy;
+}
+function fitView(){
+    const w = mapImg.naturalWidth || 7499;
+    scale = ((window.innerWidth - 680) / w) * 0.95;
+    if (scale <= 0) scale = 0.1;
+    applyScale();
+}
+function centerOnSel(){
+    const b = bbox(selection);
+    if (!b) return;
+    /* la zona libre está entre el panel izquierdo (360) y el derecho (340) */
+    const mr = mapImg.getBoundingClientRect();
+    const vr = viewport.getBoundingClientRect();
+    const freeCenterX = 360 + (viewport.clientWidth - 360 - 340)/2;
+    const freeCenterY = (viewport.clientHeight - 130)/2;
+    const x = (mr.left - vr.left + viewport.scrollLeft) + (b.left+b.width/2)/100*mr.width;
+    const y = (mr.top - vr.top + viewport.scrollTop) + (b.top+b.height/2)/100*mr.height;
+    viewport.scrollTo({left:Math.max(0, x - freeCenterX), top:Math.max(0, y - freeCenterY), behavior:'smooth'});
+}
+function toggleLabels(){
+    showLabels = !showLabels;
+    mesas().forEach(m => m.classList.toggle('hide-label', !showLabels));
+    document.getElementById('btn-labels').classList.toggle('b-dark', !showLabels);
+}
+
+/* ===================== TECLADO ===================== */
+document.addEventListener('keydown', e => {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === 'z'){ e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    if (mod && e.key.toLowerCase() === 'y'){ e.preventDefault(); redo(); return; }
+    if (mod && e.key.toLowerCase() === 'd'){ e.preventDefault(); clone('right'); return; }
+    if (mod && e.key.toLowerCase() === 'a'){ e.preventDefault(); selectAll(); return; }
+    if (e.key === '0'){ fitView(); return; }
+    if (e.key === 'Escape'){ deselect(); return; }
+    if (!selection.length) return;
+    if (e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); deleteSel(); return; }
+    if (e.key.startsWith('Arrow')){
+        e.preventDefault();
+        const s = e.altKey ? 0.5 : (e.shiftKey ? 0.05 : 0.005);
+        if (e.key === 'ArrowUp')    nudge(0,-s);
+        if (e.key === 'ArrowDown')  nudge(0, s);
+        if (e.key === 'ArrowLeft')  nudge(-s,0);
+        if (e.key === 'ArrowRight') nudge( s,0);
+    }
+});
+window.addEventListener('resize', () => { drawHandle(); drawOutline(); });
+
+/* ===================== EXPORTAR ===================== */
+function exportLines(){
+    return mesas().sort(byId).map(m => {
+        const color = m.dataset.color ? ` data-color="${m.dataset.color}"` : '';
+        return `<div class="mesa" data-info="${m.dataset.info}" data-type="${m.dataset.type||'collector'}" data-tone="${m.dataset.tone||'base'}"${color} style="left: ${f4(pct(m.style.left))}%; top: ${f4(pct(m.style.top))}%; width: ${f4(pct(m.style.width))}%; height: ${f4(pct(m.style.height))}%;"></div>`;
+    }).join('\n') + '\n';
+}
+function doExport(copyOnly){
+    const all = mesas();
+    if (!all.length) return alert('No hay mesas que exportar.');
+    const html = exportLines();
+    const area = document.getElementById('clip');
+    area.value = html; area.select();
+    try { document.execCommand('copy'); } catch(e){}
+    if (navigator.clipboard) navigator.clipboard.writeText(html).catch(()=>{});
+    autosave();
+    if (copyOnly) return alert(`Copiado al portapapeles: ${all.length} mesas.`);
+    download('mesas.html', html);
+    alert(`Descargado mesas.html con ${all.length} mesas (y copiado al portapapeles).`);
+}
+function exportJSON(){
+    const data = serialize();
+    if (!data.length) return alert('No hay mesas que exportar.');
+    download('mesas.json', JSON.stringify(data, null, 2));
+}
+function download(name, text){
+    const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+}
+
+/* ===================== MODO ===================== */
+function setMode(m){
+    mode = m;
+    document.getElementById('m-island').classList.toggle('on', m==='island');
+    document.getElementById('m-table').classList.toggle('on', m==='table');
+    deselect();
+}
+updateBar();
+stats();
+</script>
+</body>
+</html>
