@@ -52,6 +52,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
 .mesa.sold{cursor:default}
 /* en la vista completa manda la lupa, no las fichas */
 body.lvl-0 .mesa{pointer-events:none}
+body.no-loupe .mesa{pointer-events:auto}
 
 /* ---------------- SELLERS ---------------- */
 .sponsor-zone{position:absolute;pointer-events:auto;transition:transform .18s cubic-bezier(.2,.9,.3,1.2);cursor:pointer}
@@ -266,7 +267,7 @@ function canPan(){
         || (mapImg.naturalHeight * scale() > window.innerHeight + 1);
 }
 function syncUI(){
-    document.body.className = 'lvl-' + level;
+    document.body.className = 'lvl-' + level + (LOUPE.enabled ? '' : ' no-loupe');
     stage.classList.toggle('zoomed', canPan());
     backBtn.classList.toggle('on', level > 0);
     document.querySelectorAll('.zbtn').forEach(b => b.classList.toggle('on', +b.dataset.lvl === level));
@@ -526,8 +527,12 @@ const LOUPE_ON = () => level === 0;
    cuando la hoja de cálculo cambia algo), así no hay que rasterizar nada. */
 const loupe = document.getElementById('loupe');
 const loupeInner = document.getElementById('loupe-inner');
-const LOUPE_SIZE = 280, LOUPE_BORDER = 3, LOUPE_ZOOM = 3.6;
-const LOUPE_C = (LOUPE_SIZE - LOUPE_BORDER * 2) / 2;   // centro de la caja interior
+const LOUPE = Object.assign({ enabled:true, size:280, zoom:3.6, border:3 }, C.loupe || {});
+const LOUPE_C = (LOUPE.size - LOUPE.border * 2) / 2;   // centro de la caja interior
+loupe.style.width  = LOUPE.size + 'px';
+loupe.style.height = LOUPE.size + 'px';
+loupe.style.borderWidth = LOUPE.border + 'px';
+if (!LOUPE.enabled) loupe.style.display = 'none';
 let loupeReady = false;
 
 function buildLoupe(){
@@ -539,19 +544,19 @@ function buildLoupe(){
 }
 function hideLoupe(){ loupe.classList.remove('on'); }
 function moveLoupe(e){
-    if (isTouch || e.pointerType === 'touch' || dragging || !LOUPE_ON()) return hideLoupe();
+    if (!LOUPE.enabled || isTouch || e.pointerType === 'touch' || dragging || !LOUPE_ON()) return hideLoupe();
     if (e.target.closest('.sponsor-zone') || e.target.closest('#tip-seller')) return hideLoupe();
     const r = container.getBoundingClientRect();
     if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return hideLoupe();
     if (!loupeReady) buildLoupe();
-    const z = fitScale * LOUPE_ZOOM;
+    const z = fitScale * LOUPE.zoom;
     const px = (e.clientX - r.left) / r.width  * mapImg.naturalWidth;
     const py = (e.clientY - r.top)  / r.height * mapImg.naturalHeight;
     loupeInner.style.transform = `scale(${z})`;
     loupeInner.style.left = (LOUPE_C - px * z) + 'px';
     loupeInner.style.top  = (LOUPE_C - py * z) + 'px';
-    loupe.style.left = (e.clientX - LOUPE_SIZE/2) + 'px';
-    loupe.style.top  = (e.clientY - LOUPE_SIZE/2) + 'px';
+    loupe.style.left = (e.clientX - LOUPE.size/2) + 'px';
+    loupe.style.top  = (e.clientY - LOUPE.size/2) + 'px';
     loupe.classList.add('on');
 }
 stage.addEventListener('pointermove', moveLoupe);
@@ -565,8 +570,19 @@ function splitCSV(line){
 async function sincronizar(){
     if (!C.csvUrl) return;
     try{
-        const r = await fetch(C.csvUrl + '&cache_ignore=' + Date.now(), { cache:'no-cache', mode:'cors' });
-        const lines = (await r.text()).split(/\r?\n/);
+        /* La URL puede venir pegada a mano: se le quita el #fragmento y se
+           añade el anticaché con el separador correcto. */
+        const base = String(C.csvUrl).split('#')[0];
+        const url = base + (base.includes('?') ? '&' : '?') + 'cache_ignore=' + Date.now();
+        const r = await fetch(url, { cache:'no-cache', mode:'cors' });
+        const raw = await r.text();
+        if (raw.trim().startsWith('<')){
+            console.warn('[ICONS] csvUrl no devuelve CSV sino HTML. Es la URL de /edit, no la publicada.\n' +
+                         'Usa Archivo > Compartir > Publicar en la web (hoja concreta + CSV), o bien\n' +
+                         'https://docs.google.com/spreadsheets/d/ID/gviz/tq?tqx=out:csv&gid=NNN');
+            return;
+        }
+        const lines = raw.split(/\r?\n/);
         const seen = new Set();
         lines.forEach((row,i) => {
             if (i === 0 || !row.trim()) return;

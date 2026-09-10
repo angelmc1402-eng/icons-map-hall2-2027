@@ -209,6 +209,29 @@ La columna D es nueva: si la rellenas, el tooltip muestra el nombre del exposito
 `seller.html`. Si la dejas vacía no aparece nada.
 
 El mapa refresca solo cada 2 minutos (`csvRefreshMs`).
+### La URL tiene que devolver CSV, no ser la del navegador
+
+La URL de la barra del navegador (`.../edit?gid=672655889#gid=672655889`) **no sirve**: devuelve la página
+HTML del editor, y todo lo que va después de `#` ni llega al servidor. Dos formas válidas:
+
+**a) Publicar la hoja** (lo de siempre): Archivo → Compartir → Publicar en la web → elegir la hoja **2027**
+y formato **CSV**. Sale una URL con esta forma:
+
+```
+https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?gid=672655889&single=true&output=csv
+```
+
+**b) Compartir por enlace** (sin publicar), con el libro en «cualquiera con el enlace: lector»:
+
+```
+https://docs.google.com/spreadsheets/d/1b9mT5RqDehK0-28XoN2LCMg80D7Yv8uHFVDbofPK0gw/gviz/tq?tqx=out:csv&gid=672655889
+```
+
+`config.js` viene con la opción **b** puesta. El `gid` (`672655889`) es el de la pestaña 2027.
+
+Si te equivocas de URL, el mapa no se rompe: sigue funcionando con todo disponible y deja un aviso claro en
+la consola del navegador (F12) explicando qué URL hace falta.
+
 
 Para sacar la lista de IDs y pegarla en la hoja limpia:
 
@@ -227,10 +250,15 @@ Todo eso vive en `filters.html`.
   **BACK** para volver a la vista completa, clic en el plano para subir un nivel (y volver al principio
   tras el último), rueda del ratón, y teclas `1`-`4`, `+`, `−` y `Esc`. Con zoom se arrastra para moverse.
 - **Lupa en la vista completa**: en escritorio, con el zoom en ×1 la lupa sigue al cursor y amplía el plano
-  ×3,6 para orientarse y saltar de un sitio a otro. Al subir de nivel desaparece. En ×1 no salen fichas de
-  mesa: manda la lupa. En móvil no aparece (no hay cursor).
-- **Hover de mesa**: la mesa crece un 10 % con un aro blanco y un halo del color de su tipo. Nada de
-  parpadeos: una curva suave de 220 ms.
+  para orientarse y saltar de un sitio a otro. Al subir de nivel desaparece. En ×1 no salen fichas de mesa:
+  manda la lupa. En móvil no aparece (no hay cursor). **Se ajusta entera en `config.js`**:
+
+  ```js
+  loupe: { enabled: true, size: 280, zoom: 3.6, border: 3 }
+  ```
+
+  `size` es el diámetro en píxeles de pantalla, `zoom` cuánto amplía respecto a la vista completa y
+  `border` el grosor del aro blanco. Con `enabled: false` se apaga y en ×1 vuelven las fichas de mesa.
 - **Ficha de mesa** al pasar por encima en escritorio (de ×2 en adelante) y **al tocarla en móvil**: tarjeta blanca con una
   línea del color del tipo arriba, el ID grande (`A45`), la etiqueta del tipo, categoría / zona / mesa y el
   precio con la tarifa tachada más el early bird. Es un overlay de tamaño fijo, así que se lee igual de
