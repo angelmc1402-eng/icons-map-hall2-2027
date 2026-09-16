@@ -1,7 +1,7 @@
-# ICONS 2027 · Mapa interactivo · PABELLÓN 1
+# ICONS 2027 · Mapa interactivo · PABELLÓN 2
 
-Diecast · Figures & Dolls · Comics · Arcade. 336 mesas en 28 islas de 12.
-El Pabellón 2 va en su propio repositorio con la misma estructura.
+TCG · Sport Cards. 412 mesas en 23 anillos de 12 a 22 mesas.
+El Pabellón 1 va en su propio repositorio con la misma estructura.
 
 ## Ficheros
 
@@ -14,8 +14,8 @@ El Pabellón 2 va en su propio repositorio con la misma estructura.
 | `seller.html` | Logos de expositores. Vacío; lo genera `builder-sellers.html`. |
 | `builder.html` | Tables Builder Pro. |
 | `builder-sellers.html` | Sellers Builder. |
-| ``Hall 1.png`` | Plano (7499 × 5675 px). Si se cambia, mismo nombre y misma proporción. |
-| `CNAME` | Dominio de GitHub Pages: `hall1.iconscollectibles.com`. |
+| ``Hall 2.png`` | Plano (7686 × 5372 px). Si se cambia, mismo nombre y misma proporción. |
+| `CNAME` | Dominio de GitHub Pages: `hall2.iconscollectibles.com`. |
 
 ## Arranque
 
@@ -44,7 +44,7 @@ Contrato de columnas (fila 1 = cabecera, se ignora):
 |---|---|
 | A | libre |
 | B | estado — si contiene `VENDIDA` o `SOLD`, la mesa sale roja con `SOLD OUT` |
-| C | ID de mesa — tiene que coincidir exactamente con `data-info` (`DIECAST-A-37`) |
+| C | ID de mesa — tiene que coincidir exactamente con `data-info` (`TCG-A-1`) |
 | D | opcional: expositor, sale en la ficha de la mesa |
 | E+ | libres, se ignoran |
 
@@ -102,32 +102,43 @@ Hoy: collector 100 € → 85 € · commercial 250 € → 212,50 €. `earlyBi
 
 ## Numeración del plano
 
-**La letra es la columna y el número la fila**, de abajo arriba y en bloques de 12. Por eso `DIECAST-A` no
-es una isla: son tres. Dentro de cada isla (2 arriba, 4 por lado, 2 abajo) la numeración arranca en la 3.ª
-mesa de la columna izquierda y va en sentido antihorario.
+**La letra es la columna y el número la fila**, de abajo arriba. Aquí los anillos no son todos de 12:
 
-| Categoría | Islas | Mesas | Letras | Bloques |
-|---|---|---|---|---|
-| DIECAST | 9 | 108 | A, B, C | 13-24 · 25-36 · 37-48 |
-| FIGURES | 10 | 120 | D–J | 25-36 · 37-48 |
-| COMICS | 6 | 72 | K, L, M | 25-36 · 37-48 |
-| ARCADE | 3 | 36 | K, L, M | 49-60 |
-| **Total** | **28** | **336** | | |
+| Zona | Letra | Mesas | Anillos |
+|---|---|---|---|
+| TCG | A | 40 | 1-20 · 21-40 |
+| TCG | B | 40 | 1-20 · 21-40 |
+| TCG | C | 44 | 1-22 · 23-44 |
+| TCG | D | 40 | 1-20 · 21-40 |
+| TCG | E | 40 | 1-20 · 21-40 |
+| TCG | R | 24 | 1-12 · 13-24 |
+| TCG | S | 24 | 1-12 · 13-24 |
+| Sport Cards | J | 52 | 1-20 · 21-36 · 37-52 |
+| Sport Cards | K | 52 | 1-20 · 21-36 · 37-52 |
+| Sport Cards | L | 56 | 1-22 · 23-40 · 41-56 |
+| **Total** | | **412** | **23 anillos** |
 
-`mesas.html` se generó leyendo el PNG: detección de rectángulos por color (relleno `#E6ECFF`, borde
-`#3E5CFA`), islas por contigüidad, número por OCR de la etiqueta impresa con votación por isla, tipo por
-color de la etiqueta (rosa collector, verde commercial, ámbar artist valley) y geometría normalizada a
-85 × 25 px con ejes compartidos. Verificado mesa a mesa.
+`mesas.html` se generó leyendo el PNG con la misma receta que el Pabellón 1 (relleno `#E6ECFF`, borde
+`#3E6FFF`, OCR con votación por anillo, geometría normalizada a 86 × 26 px). Ojo con el fondo
+`#DBF3FF` de SPORTS CARD STANDS: está a distancia 18 del relleno de mesa, por eso la tolerancia de color
+está en ≤ 10.
 
-## Pendiente
+## Diferencias con el Pabellón 1
 
-`COMICS-M-25..36` y `COMICS-M-37..48` son Artist Valley en el plano. Están como collector en tono claro.
-Si necesitan tipo y precio propios, se añade una entrada en `types` de `config.js`.
+| | Pabellón 1 | Pabellón 2 |
+|---|---|---|
+| Plano | 7499 × 5675 | 7686 × 5372 |
+| Mesas | 336 en 28 islas de 12 | 412 en 23 anillos de 12 a 22 |
+| Mesa horizontal | 85 × 25 px | 86 × 26 px |
+| `defaults.ring` | 2 / 4 / 2 | 2 / 8 / 2 |
 
 ## Mesas de esquina
 
 Las mesas que hacen esquina se contratan por parejas: una mesa horizontal y
-una vertical de la misma isla que se tocan por un extremo. Al pasar el ratón
+una vertical de la misma isla que se tocan por un extremo. Hay dos formas de
+montar esa esquina y las dos cuentan: la horizontal al lado de la vertical
+(islas de Diecast, Figures, Comics, Arcade, Sport Cards y TCG A-E) o la
+horizontal encima o debajo (islas TCG R y S del Pabellón 2). Al pasar el ratón
 por una de las dos se iluminan las dos, el tooltip muestra los dos números
 (`K50 + K51`) y el precio ya viene multiplicado por dos. Si una de las dos
 está vendida, la pareja entera sale como `SOLD OUT`.

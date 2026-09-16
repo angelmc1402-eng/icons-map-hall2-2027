@@ -1,12 +1,12 @@
-/* ICONS 2027 · HALL 1 · configuración única.
+/* ICONS 2027 · HALL 2 · configuración única.
    La leen index.html, filters.html, builder.html y builder-sellers.html.
    Es el único fichero que hay que tocar para precios, colores o categorías. */
 
 window.ICONS_CONFIG = {
 
-    hallName:  'HALL 1',
-    hallLabel: 'Pabellón 1 · Diecast, Figures & Dolls, Comics & Arcade',
-    mapImage:  'Hall 1.png',
+    hallName:  'HALL 2',
+    hallLabel: 'Pabellón 2 · TCG, Sport Cards',
+    mapImage:  'Hall 2.png',
 
     /* Google Sheets como CSV. La URL de /edit NO sirve, tiene que devolver CSV:
          compartida como lector -> .../d/ID_LIBRO/gviz/tq?tqx=out:csv&gid=NNN
@@ -18,10 +18,8 @@ window.ICONS_CONFIG = {
 
     /* key = prefijo del id (DIECAST-A-1) · label = lo que ve el público */
     categories: [
-        { key: 'DIECAST', label: 'Diecast' },
-        { key: 'FIGURES', label: 'Figures & Dolls' },
-        { key: 'COMICS',  label: 'Comics' },
-        { key: 'ARCADE',  label: 'Arcade' }
+        { key: 'TCG',   label: 'TCG' },
+        { key: 'SPORT', label: 'Sport Cards' }
     ],
 
     /* price = tarifa; se muestra tachada y al lado el precio con descuento */
@@ -54,10 +52,10 @@ window.ICONS_CONFIG = {
         { key: 'dark',  label: 'Oscuro' }
     ],
 
-    /* medidas del builder, en % del plano. Mesa real de HALL 1: 85x25 px sobre 7499x5675 */
+    /* medidas del builder, en % del plano. Mesa real de HALL 2: 86x26 px sobre 7686x5372 */
     defaults: {
-        horizontal: { w: 1.1335, h: 0.4405 },
-        vertical:   { w: 0.3334, h: 1.4978 },
+        horizontal: { w: 1.1189, h: 0.4840 },
+        vertical:   { w: 0.3383, h: 1.6194 },
         gapX: 0.04,
         gapY: 0.07,
         cloneGap: 0.30,
@@ -65,7 +63,7 @@ window.ICONS_CONFIG = {
            de la misma isla: mayor que el hueco interior del anillo (~79 px) y
            menor que la separación entre anillos (>165 px) */
         islandGapPx: 110,
-        ring: { top: 2, side: 4, bottom: 2 }
+        ring: { top: 2, side: 8, bottom: 2 }
     }
 };
 
@@ -156,7 +154,14 @@ window.ICONS_CONFIG = {
         tol: 0.14,          /* % del plano; menor que el ancho de una mesa (0.33) */
         pairs: new Map(),   /* id de mesa -> id de su pareja */
 
-        /* recibe los nodos .mesa ya insertados y rellena el mapa */
+        /* recibe los nodos .mesa ya insertados y rellena el mapa.
+           Hay dos formas de montar una esquina y las dos cuentan:
+             A) la mesa horizontal va AL LADO de la vertical (se tocan en X
+                y comparten el borde de arriba o el de abajo)
+             B) la mesa horizontal va ENCIMA o DEBAJO de la vertical (se
+                tocan en Y y comparten el borde izquierdo o el derecho)
+           Los candidatos se ordenan por cercanía y se asignan de uno en uno,
+           así que ninguna mesa puede acabar en dos parejas. */
         build: function (nodes) {
             const caja = function (el) {
                 const x = parseFloat(el.style.left), y = parseFloat(el.style.top);
@@ -168,23 +173,31 @@ window.ICONS_CONFIG = {
             const todas = Array.prototype.map.call(nodes, caja).filter(function (b) { return b.id && b.ok; });
             const H = todas.filter(function (b) { return b.horiz; });
             const V = todas.filter(function (b) { return !b.horiz; });
-            const t = C.corner.tol, pares = new Map();
+            const t = C.corner.tol, cand = [];
+
             H.forEach(function (h) {
                 V.forEach(function (v) {
                     if (h.isla !== v.isla) return;
-                    if (pares.has(h.id) || pares.has(v.id)) return;
-                    const tocan  = Math.abs(v.x2 - h.x) < t || Math.abs(h.x2 - v.x) < t;
-                    if (!tocan) return;
-                    const alinea = Math.abs(h.y - v.y) < t || Math.abs(h.y2 - v.y2) < t;
-                    if (!alinea) return;
-                    pares.set(h.id, v.id);
-                    pares.set(v.id, h.id);
+                    const dxA = Math.min(Math.abs(v.x2 - h.x), Math.abs(h.x2 - v.x));
+                    const dyA = Math.min(Math.abs(h.y  - v.y), Math.abs(h.y2 - v.y2));
+                    if (dxA < t && dyA < t) cand.push([dxA + dyA, h.id, v.id]);
+
+                    const dyB = Math.min(Math.abs(v.y2 - h.y), Math.abs(h.y2 - v.y));
+                    const dxB = Math.min(Math.abs(h.x  - v.x), Math.abs(h.x2 - v.x2));
+                    if (dyB < t && dxB < t) cand.push([dyB + dxB, h.id, v.id]);
                 });
+            });
+
+            cand.sort(function (a, b) { return a[0] - b[0]; });
+            const pares = new Map();
+            cand.forEach(function (c) {
+                if (pares.has(c[1]) || pares.has(c[2])) return;
+                pares.set(c[1], c[2]);
+                pares.set(c[2], c[1]);
             });
             C.corner.pairs = pares;
             return pares.size / 2;
         },
-
         partner: function (id) { return C.corner.pairs.get(id) || null; },
         is:      function (id) { return C.corner.pairs.has(id); }
     };

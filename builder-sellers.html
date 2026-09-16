@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ICONS 2027 · Hall 1 · Sellers Builder</title>
+<title>ICONS 2027 · Hall 2 · Sellers Builder</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#111827;--panel:#fff;--line:#e2e8f0;--soft:#f8fafc;--ink:#0f172a;--ink-2:#475569;--ink-3:#94a3b8;--purple:#8b5cf6;--cyan:#00d2d3;--green:#2ecc71;--blue:#3b82f6;--red:#ff5a5f;--orange:#ff9f43}
@@ -83,7 +83,7 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
 <div id="panel">
     <div class="hd">
         <h3>Sellers Builder</h3>
-        <small id="hall-tag">Hall 1</small>
+        <small id="hall-tag">Hall 2</small>
     </div>
 
     <div class="box">
@@ -225,7 +225,7 @@ window.addEventListener('dragstart', e => e.preventDefault());
 const C = window.ICONS_CONFIG;
 let scale = .15, sel = null, showMesas = false;
 const undoStack = [], redoStack = [], MAX_UNDO = 100;
-const AUTOSAVE_KEY = 'icons-hall1-sellers-v1';
+const AUTOSAVE_KEY = 'icons-' + C.hallName.toLowerCase().replace(/\s+/g,'') + '-sellers-v1';
 
 const viewport = document.getElementById('viewport');
 const container = document.getElementById('container');

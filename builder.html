@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ICONS 2027 · Hall 1 · Tables Builder Pro</title>
+<title>ICONS 2027 · Hall 2 · Tables Builder Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -169,7 +169,7 @@ details summary{font-size:11px;font-weight:900;cursor:pointer;color:var(--ink-2)
     <div class="hd">
         <div>
             <h3>Tables Builder Pro</h3>
-            <small id="hall-tag">Hall 1</small>
+            <small id="hall-tag">Hall 2</small>
         </div>
         <button class="btn b-light b-xs" style="width:auto;padding:6px 9px" onclick="toggleLabels()" id="btn-labels" title="Mostrar/ocultar números">123</button>
     </div>
@@ -433,7 +433,7 @@ let selection = [];          // array de elementos .mesa
 let showLabels = true;
 const undoStack = [], redoStack = [];
 const MAX_UNDO = 120;
-const AUTOSAVE_KEY = 'icons-hall1-builder-v1';
+const AUTOSAVE_KEY = 'icons-' + C.hallName.toLowerCase().replace(/\s+/g,'') + '-builder-v1';
 
 const viewport = document.getElementById('viewport');
 const container = document.getElementById('container');
