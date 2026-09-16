@@ -1,12 +1,12 @@
-/* ICONS 2027 · HALL 2 · configuración única.
+/* ICONS 2027 · HALL 1 · configuración única.
    La leen index.html, filters.html, builder.html y builder-sellers.html.
    Es el único fichero que hay que tocar para precios, colores o categorías. */
 
 window.ICONS_CONFIG = {
 
-    hallName:  'HALL 2',
-    hallLabel: 'Pabellón 2 · TCG, Sport Cards',
-    mapImage:  'Hall 2.png',
+    hallName:  'HALL 1',
+    hallLabel: 'Pabellón 1 · Diecast, Figures & Dolls, Comics & Arcade',
+    mapImage:  'Hall 1.png',
 
     /* Google Sheets como CSV. La URL de /edit NO sirve, tiene que devolver CSV:
          compartida como lector -> .../d/ID_LIBRO/gviz/tq?tqx=out:csv&gid=NNN
@@ -18,8 +18,10 @@ window.ICONS_CONFIG = {
 
     /* key = prefijo del id (DIECAST-A-1) · label = lo que ve el público */
     categories: [
-        { key: 'TCG',   label: 'TCG' },
-        { key: 'SPORT', label: 'Sport Cards' }
+        { key: 'DIECAST', label: 'Diecast' },
+        { key: 'FIGURES', label: 'Figures & Dolls' },
+        { key: 'COMICS',  label: 'Comics' },
+        { key: 'ARCADE',  label: 'Arcade' }
     ],
 
     /* price = tarifa; se muestra tachada y al lado el precio con descuento */
@@ -52,10 +54,10 @@ window.ICONS_CONFIG = {
         { key: 'dark',  label: 'Oscuro' }
     ],
 
-    /* medidas del builder, en % del plano. Mesa real de HALL 2: 86x26 px sobre 7686x5372 */
+    /* medidas del builder, en % del plano. Mesa real de HALL 1: 85x25 px sobre 7499x5675 */
     defaults: {
-        horizontal: { w: 1.1189, h: 0.4840 },
-        vertical:   { w: 0.3383, h: 1.6194 },
+        horizontal: { w: 1.1335, h: 0.4405 },
+        vertical:   { w: 0.3334, h: 1.4978 },
         gapX: 0.04,
         gapY: 0.07,
         cloneGap: 0.30,
@@ -63,7 +65,7 @@ window.ICONS_CONFIG = {
            de la misma isla: mayor que el hueco interior del anillo (~79 px) y
            menor que la separación entre anillos (>165 px) */
         islandGapPx: 110,
-        ring: { top: 2, side: 8, bottom: 2 }
+        ring: { top: 2, side: 4, bottom: 2 }
     }
 };
 
