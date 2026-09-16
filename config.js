@@ -133,11 +133,57 @@ window.ICONS_CONFIG = {
         }) + ' €';
     };
 
-    /* -> { base:'100,00 €', early:'85,00 €'|null } */
-    C.priceFor = function (type) {
+    /* -> { base:'100,00 €', early:'85,00 €'|null }
+       units = nº de mesas (las esquinas van de dos en dos) */
+    C.priceFor = function (type, units) {
         const t = C.types[type] || C.types.collector;
-        const base = C.euro(t.price);
+        const n = units > 0 ? units : 1;
+        const total = t.price * n;
+        const base = C.euro(total);
         if (!C.earlyBird.active) return { base, early: null };
-        return { base, early: C.euro(t.price * (1 - C.earlyBird.discount)) };
+        return { base, early: C.euro(total * (1 - C.earlyBird.discount)) };
+    };
+
+    /* ---- ESQUINAS ---------------------------------------------------
+       Las mesas que hacen esquina se contratan juntas, nunca sueltas.
+       Una esquina son dos mesas de la misma isla, una horizontal y una
+       vertical, que se tocan por un extremo y comparten el borde de
+       arriba o el de abajo. Se detecta sobre la geometría real del
+       plano, así que si se redibuja no hay que tocar nada de aquí. */
+    C.corner = {
+        tol: 0.14,          /* % del plano; menor que el ancho de una mesa (0.33) */
+        pairs: new Map(),   /* id de mesa -> id de su pareja */
+
+        /* recibe los nodos .mesa ya insertados y rellena el mapa */
+        build: function (nodes) {
+            const caja = function (el) {
+                const x = parseFloat(el.style.left), y = parseFloat(el.style.top);
+                const w = parseFloat(el.style.width), h = parseFloat(el.style.height);
+                return { id: el.dataset.info || '', x: x, y: y, x2: x + w, y2: y + h,
+                         isla: String(el.dataset.info || '').replace(/-\d+$/, ''),
+                         horiz: w > h, ok: isFinite(x) && isFinite(y) && isFinite(w) && isFinite(h) };
+            };
+            const todas = Array.prototype.map.call(nodes, caja).filter(function (b) { return b.id && b.ok; });
+            const H = todas.filter(function (b) { return b.horiz; });
+            const V = todas.filter(function (b) { return !b.horiz; });
+            const t = C.corner.tol, pares = new Map();
+            H.forEach(function (h) {
+                V.forEach(function (v) {
+                    if (h.isla !== v.isla) return;
+                    if (pares.has(h.id) || pares.has(v.id)) return;
+                    const tocan  = Math.abs(v.x2 - h.x) < t || Math.abs(h.x2 - v.x) < t;
+                    if (!tocan) return;
+                    const alinea = Math.abs(h.y - v.y) < t || Math.abs(h.y2 - v.y2) < t;
+                    if (!alinea) return;
+                    pares.set(h.id, v.id);
+                    pares.set(v.id, h.id);
+                });
+            });
+            C.corner.pairs = pares;
+            return pares.size / 2;
+        },
+
+        partner: function (id) { return C.corner.pairs.get(id) || null; },
+        is:      function (id) { return C.corner.pairs.has(id); }
     };
 })();

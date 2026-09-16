@@ -46,6 +46,12 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
     z-index:30;
 }
 .mesa.active{z-index:31}
+/* esquinas: las dos mesas van juntas, así que se iluminan juntas */
+.mesa.pair{
+    box-shadow:0 0 0 2px var(--pair,rgba(11,18,32,.65)), 0 0 12px 4px var(--ring,rgba(11,18,32,.35));
+    filter:saturate(1.45) brightness(1.04);
+    z-index:30;
+}
 .mesa.sold{cursor:default}
 /* en la vista completa manda la lupa, no las fichas */
 body.lvl-0 .mesa{pointer-events:none}
@@ -95,6 +101,13 @@ body.no-loupe .mesa{pointer-events:auto}
 .t-eb{font-size:13px;font-weight:800;color:#e11d48;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
 .t-sold{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--sold)}
 .t-sold::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--sold)}
+.t-corner{
+    margin:12px 16px 0;padding:8px 10px;border-radius:7px;
+    background:var(--accent-soft,#f1f5f9);color:var(--accent-ink,#334155);
+    font-size:11.5px;font-weight:600;line-height:1.45;
+}
+.t-corner b{font-weight:800}
+.t-units{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
 .t-seller{padding:12px 16px 0;font-size:12px;font-weight:600;color:var(--ink-2)}
 .t-seller b{color:var(--ink);font-weight:800}
 
@@ -380,6 +393,7 @@ function hideTips(){
     tipMesa.classList.remove('show');
     tipSeller.classList.remove('show');
     document.querySelectorAll('.mesa.active').forEach(m => m.classList.remove('active'));
+    clearPairs();
 }
 function place(tip, rect){
     tip.style.visibility = 'hidden';
@@ -395,15 +409,41 @@ function place(tip, rect){
     tip.style.visibility = 'visible';
 }
 
+/* ESQUINAS · resaltar las dos mesas a la vez (también en la lupa) */
+function markPair(m, on){
+    const id = m.dataset.info || '';
+    const mate = C.corner.partner(id);
+    if (!mate) return;
+    [id, mate].forEach(x => document.querySelectorAll('.mesa[data-info="' + x + '"]')
+        .forEach(el => el.classList.toggle('pair', on)));
+}
+function clearPairs(){
+    document.querySelectorAll('.mesa.pair').forEach(el => el.classList.remove('pair'));
+}
+
 function showMesaTip(m){
     const info  = m.dataset.info || '';
     const type  = m.dataset.type || 'collector';
     const p     = C.parseId(info);
-    const price = C.priceFor(type);
     const conf  = C.types[type] || C.types.collector;
     const hex   = m._hex;
-    const sold  = m.classList.contains('sold');
     const seller= m.dataset.seller || '';
+
+    /* esquina: las dos mesas se contratan juntas, así que el precio va x2
+       y basta con que una de las dos esté vendida para que no se pueda coger */
+    const mate  = C.corner.partner(info);
+    const mEl   = mate ? dict.get(mate) : null;
+    const q     = mate ? C.parseId(mate) : null;
+    const price = C.priceFor(type, mate ? 2 : 1);
+    const sold  = m.classList.contains('sold') || !!(mEl && mEl.classList.contains('sold'));
+
+    let label = p.zone + p.num, celda = p.num;
+    if (mate){
+        const a = Math.min(parseInt(p.num,10), parseInt(q.num,10));
+        const b = Math.max(parseInt(p.num,10), parseInt(q.num,10));
+        label = p.zone + a + ' + ' + p.zone + b;
+        celda = a + ' + ' + b;
+    }
 
     tipMesa.style.setProperty('--accent', sold ? C.soldColor : hex);
     tipMesa.style.setProperty('--accent-soft', C.rgba(sold ? C.soldColor : hex, .13));
@@ -411,14 +451,15 @@ function showMesaTip(m){
 
     tipMesa.innerHTML = `
         <div class="t-head">
-            <div class="t-id">${p.zone}${p.num}</div>
+            <div class="t-id">${label}</div>
             <span class="t-pill">${sold ? C.soldLabel : conf.label.replace(' Table','')}</span>
         </div>
         <div class="t-meta">
             <div class="t-cell"><span class="t-k">Category</span><span class="t-v">${p.catLabel}</span></div>
             <div class="t-cell"><span class="t-k">Zone</span><span class="t-v">${p.zone}</span></div>
-            <div class="t-cell"><span class="t-k">Table</span><span class="t-v">${p.num}</span></div>
+            <div class="t-cell"><span class="t-k">${mate ? 'Tables' : 'Table'}</span><span class="t-v">${celda}</span></div>
         </div>
+        ${mate ? `<div class="t-corner">Corner position &middot; these <b>2 tables</b> are booked together and cannot be split.</div>` : ''}
         ${seller ? `<div class="t-seller">Exhibitor · <b>${seller}</b></div>` : ''}
         <div class="t-foot">
             ${sold
@@ -426,8 +467,11 @@ function showMesaTip(m){
                 : (price.early
                     ? `<span class="t-old">${price.base}</span><span class="t-new">${price.early}</span><span class="t-eb">−${Math.round(C.earlyBird.discount*100)}%</span>`
                     : `<span class="t-new">${price.base}</span>`)}
+            ${mate && !sold ? `<span class="t-units">2 tables</span>` : ''}
         </div>`;
     document.querySelectorAll('.mesa.active').forEach(x => x.classList.remove('active'));
+    clearPairs();
+    markPair(m, true);
     if (isTouch) m.classList.add('active');
     place(tipMesa, m.getBoundingClientRect());
 }
@@ -439,10 +483,12 @@ function paint(m){
     m.style.backgroundColor = C.rgba(hex, sold ? .46 : .34);
     m.style.borderColor = C.rgba(C.shade(hex,.3), .75);
     m.style.setProperty('--ring', C.rgba(hex, .5));
+    m.style.setProperty('--pair', C.rgba(C.shade(hex,.38), .85));
 }
 async function cargarMesas(){
     const resp = await fetch('mesas.html?v=' + Date.now(), { cache:'no-store' });
     capaMesas.innerHTML = await resp.text();
+    C.corner.build(capaMesas.querySelectorAll('.mesa'));
     capaMesas.querySelectorAll('.mesa').forEach(m => {
         const info = m.dataset.info || '';
         dict.set(info, m);
@@ -451,8 +497,8 @@ async function cargarMesas(){
         m._hex = C.colorFor(type, m.dataset.tone || 'base', m.dataset.color || '');
         paint(m);
         if (!isTouch){
-            m.addEventListener('pointerenter', () => { if (!dragging) showMesaTip(m); });
-            m.addEventListener('pointerleave', () => tipMesa.classList.remove('show'));
+            m.addEventListener('pointerenter', () => { if (!dragging){ markPair(m,true); showMesaTip(m); } });
+            m.addEventListener('pointerleave', () => { markPair(m,false); tipMesa.classList.remove('show'); });
         }
     });
 }

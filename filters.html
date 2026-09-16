@@ -47,6 +47,12 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
     z-index:30;
 }
 .mesa.active{z-index:31}
+/* esquinas: las dos mesas van juntas, así que se iluminan juntas */
+.mesa.pair{
+    box-shadow:0 0 0 2px var(--pair,rgba(11,18,32,.65)), 0 0 12px 4px var(--ring,rgba(11,18,32,.35));
+    filter:saturate(1.45) brightness(1.04);
+    z-index:30;
+}
 .mesa.sold{cursor:default}
 /* en la vista completa manda la lupa, no las fichas */
 body.zoom-1 .mesa{pointer-events:none}
@@ -99,6 +105,13 @@ body.zoom-1 .mesa{pointer-events:none}
 .t-eb{font-size:13px;font-weight:800;color:#e11d48;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
 .t-sold{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--sold)}
 .t-sold::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--sold)}
+.t-corner{
+    margin:12px 16px 0;padding:8px 10px;border-radius:7px;
+    background:var(--accent-soft,#f1f5f9);color:var(--accent-ink,#334155);
+    font-size:11.5px;font-weight:600;line-height:1.45;
+}
+.t-corner b{font-weight:800}
+.t-units{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
 .t-seller{padding:12px 16px 0;font-size:12px;font-weight:600;color:var(--ink-2)}
 .t-seller b{color:var(--ink);font-weight:800}
 
@@ -143,6 +156,8 @@ body.zoom-1 .mesa{pointer-events:none}
 .lg-row.off{opacity:.4}
 .lg-sw{width:13px;height:13px;border-radius:4px;flex:none;box-shadow:inset 0 0 0 1px rgba(11,18,32,.12)}
 .lg-row b{color:var(--ink);font-weight:800;margin-left:auto;font-variant-numeric:tabular-nums;font-size:11px}
+.lg-corner{margin-top:8px;font-size:9.5px;font-weight:700;color:var(--ink-3);line-height:1.4}
+.lg-corner::before{content:"";display:inline-block;width:7px;height:7px;margin-right:6px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;vertical-align:1px}
 .lg-eb{margin-top:10px;font-size:8.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#0f6b52;background:#e7f8f2;padding:5px 9px;border-radius:999px;display:inline-block}
 .lg-hint{margin-top:9px;font-size:9.5px;color:var(--ink-3);font-weight:600;line-height:1.5}
 #simple-link{display:inline-block;margin-top:9px;font-size:10px;font-weight:800;color:var(--ink-2);text-decoration:none;letter-spacing:.04em;border-bottom:1px solid #cfd8e3;padding-bottom:1px}
@@ -212,6 +227,7 @@ body.zoom-1 .mesa{pointer-events:none}
         <div class="lg-title">Tables</div>
         <div id="lg-rows"></div>
         <div id="lg-eb" class="lg-eb"></div>
+        <div class="lg-corner">Corner positions are booked in pairs</div>
         <div class="lg-hint">Click a row to filter · scroll or drag the slider to zoom</div>
     </div>
 </div>
@@ -429,16 +445,41 @@ function place(tip, rect){
 }
 
 /* MESAS */
+/* ESQUINAS · resaltar las dos mesas a la vez (también en la lupa) */
+function markPair(m, on){
+    const id = m.dataset.info || '';
+    const mate = C.corner.partner(id);
+    if (!mate) return;
+    [id, mate].forEach(x => document.querySelectorAll('.mesa[data-info="' + x + '"]')
+        .forEach(el => el.classList.toggle('pair', on)));
+}
+function clearPairs(){
+    document.querySelectorAll('.mesa.pair').forEach(el => el.classList.remove('pair'));
+}
+
 function mesaTip(m){
     const info  = m.dataset.info || '';
     const type  = m.dataset.type || 'collector';
     const p     = C.parseId(info);
-    const price = C.priceFor(type);
     const conf  = C.types[type] || C.types.collector;
     const hex   = m._hex;
-    const sold  = m.classList.contains('sold');
     const seller= m.dataset.seller || '';
-    const label = `${p.zone}${p.num}`;
+
+    /* esquina: las dos mesas se contratan juntas, así que el precio va x2
+       y basta con que una de las dos esté vendida para que no se pueda coger */
+    const mate  = C.corner.partner(info);
+    const mEl   = mate ? dict.get(mate) : null;
+    const q     = mate ? C.parseId(mate) : null;
+    const price = C.priceFor(type, mate ? 2 : 1);
+    const sold  = m.classList.contains('sold') || !!(mEl && mEl.classList.contains('sold'));
+
+    let label = p.zone + p.num, celda = p.num;
+    if (mate){
+        const a = Math.min(parseInt(p.num,10), parseInt(q.num,10));
+        const b = Math.max(parseInt(p.num,10), parseInt(q.num,10));
+        label = p.zone + a + ' + ' + p.zone + b;
+        celda = a + ' + ' + b;
+    }
 
     tipMesa.style.setProperty('--accent', sold ? C.soldColor : hex);
     tipMesa.style.setProperty('--accent-soft', C.rgba(sold ? C.soldColor : hex, .13));
@@ -452,8 +493,9 @@ function mesaTip(m){
         <div class="t-meta">
             <div class="t-cell"><span class="t-k">Category</span><span class="t-v">${p.catLabel}</span></div>
             <div class="t-cell"><span class="t-k">Zone</span><span class="t-v">${p.zone}</span></div>
-            <div class="t-cell"><span class="t-k">Table</span><span class="t-v">${p.num}</span></div>
+            <div class="t-cell"><span class="t-k">${mate ? 'Tables' : 'Table'}</span><span class="t-v">${celda}</span></div>
         </div>
+        ${mate ? `<div class="t-corner">Corner position &middot; these <b>2 tables</b> are booked together and cannot be split.</div>` : ''}
         ${seller ? `<div class="t-seller">Exhibitor · <b>${seller}</b></div>` : ''}
         <div class="t-foot">
             ${sold
@@ -461,6 +503,7 @@ function mesaTip(m){
                 : (price.early
                     ? `<span class="t-old">${price.base}</span><span class="t-new">${price.early}</span><span class="t-eb">−${Math.round(C.earlyBird.discount*100)}%</span>`
                     : `<span class="t-new">${price.base}</span>`)}
+            ${mate && !sold ? `<span class="t-units">2 tables</span>` : ''}
         </div>`;
     place(tipMesa, m.getBoundingClientRect());
 }
@@ -468,6 +511,7 @@ function mesaTip(m){
 async function cargarMesas(){
     const resp = await fetch('mesas.html?v=' + Date.now(), { cache:'no-store' });
     capaMesas.innerHTML = await resp.text();
+    C.corner.build(capaMesas.querySelectorAll('.mesa'));
 
     capaMesas.querySelectorAll('.mesa').forEach(m => {
         const info = m.dataset.info || '';
@@ -478,8 +522,8 @@ async function cargarMesas(){
         const hex = C.colorFor(type, tone, m.dataset.color || '');
         m._hex = hex;
         paint(m);
-        m.addEventListener('pointerenter', () => { if (!dragging) mesaTip(m); });
-        m.addEventListener('pointerleave', () => tipMesa.classList.remove('show'));
+        m.addEventListener('pointerenter', () => { if (!dragging){ markPair(m,true); mesaTip(m); } });
+        m.addEventListener('pointerleave', () => { markPair(m,false); tipMesa.classList.remove('show'); });
     });
 }
 function paint(m){
@@ -488,6 +532,7 @@ function paint(m){
     m.style.backgroundColor = C.rgba(hex, sold ? .46 : .34);
     m.style.borderColor = C.rgba(C.shade(hex,.3), .75);
     m.style.setProperty('--ring', C.rgba(hex, .5));
+    m.style.setProperty('--pair', C.rgba(C.shade(hex,.38), .85));
 }
 
 /* SELLERS */
