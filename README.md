@@ -1,6 +1,6 @@
 # ICONS 2027 · Mapa interactivo · PABELLÓN 2
 
-TCG · Sport Cards. 412 mesas en 23 anillos de 12 a 22 mesas.
+TCG · Sport Cards. 412 mesas en 23 anillos de 12 a 22 mesas. TCG R y S: solo cuartos de isla (ver abajo).
 El Pabellón 1 va en su propio repositorio con la misma estructura.
 
 ## Ficheros
@@ -148,3 +148,15 @@ geometría real de `mesas.html` al cargar. Si se redibuja un plano no hay que
 tocar nada: las parejas se recalculan solas. La tolerancia (`C.corner.tol`,
 0.14 % del plano) es menor que el ancho de una mesa y mayor que el hueco
 entre dos mesas contiguas.
+
+## Cuartos de isla (TCG R y S)
+
+Los cuatro anillos pequeños de abajo a la derecha (`TCG-R`, `TCG-S`) son **commercial** y solo se venden
+por **cuartos de isla**: la vertical de la esquina + las 2 horizontales anexas (p. ej. `R14+R15+R16`,
+`S13+S24+S23`). 16 bloques de 3 mesas. Se definen en `config.js` → `blocks.list`.
+
+- Hover: se iluminan las 3 mesas a la vez (también en la lupa).
+- Ficha: `R14 + R15 + R16`, aviso «Quarter island», precio = 3 × tarifa commercial (750 € → 637,50 € early bird).
+- Hoja: basta con marcar VENDIDA **una** de las 3 mesas para que el bloque entero salga SOLD OUT
+  (recomendable marcar las 3 igualmente).
+- Estas mesas no entran en la detección automática de esquinas de 2.

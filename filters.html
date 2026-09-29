@@ -228,6 +228,7 @@ body.zoom-1 .mesa{pointer-events:none}
         <div id="lg-rows"></div>
         <div id="lg-eb" class="lg-eb"></div>
         <div class="lg-corner">Corner positions are booked in pairs</div>
+        <div class="lg-corner">TCG R &amp; S: quarter islands only (3 tables)</div>
         <div class="lg-hint">Click a row to filter · scroll or drag the slider to zoom</div>
     </div>
 </div>
@@ -448,9 +449,9 @@ function place(tip, rect){
 /* ESQUINAS · resaltar las dos mesas a la vez (también en la lupa) */
 function markPair(m, on){
     const id = m.dataset.info || '';
-    const mate = C.corner.partner(id);
-    if (!mate) return;
-    [id, mate].forEach(x => document.querySelectorAll('.mesa[data-info="' + x + '"]')
+    const grupo = C.corner.group(id);
+    if (!grupo) return;
+    grupo.forEach(x => document.querySelectorAll('.mesa[data-info="' + x + '"]')
         .forEach(el => el.classList.toggle('pair', on)));
 }
 function clearPairs(){
@@ -465,20 +466,20 @@ function mesaTip(m){
     const hex   = m._hex;
     const seller= m.dataset.seller || '';
 
-    /* esquina: las dos mesas se contratan juntas, así que el precio va x2
-       y basta con que una de las dos esté vendida para que no se pueda coger */
-    const mate  = C.corner.partner(info);
-    const mEl   = mate ? dict.get(mate) : null;
-    const q     = mate ? C.parseId(mate) : null;
-    const price = C.priceFor(type, mate ? 2 : 1);
-    const sold  = m.classList.contains('sold') || !!(mEl && mEl.classList.contains('sold'));
+    /* esquina (2 mesas) o cuarto de isla (3 mesas): se contratan juntas, el precio es la suma
+       y basta con que una esté vendida para que no se pueda coger el grupo */
+    const grupo = C.corner.group(info);
+    const bloque= C.corner.isBlock(info);
+    const n     = grupo ? grupo.length : 1;
+    const price = C.priceFor(type, n);
+    const sold  = grupo ? grupo.some(x => { const el = dict.get(x); return el && el.classList.contains('sold'); })
+                        : m.classList.contains('sold');
 
     let label = p.zone + p.num, celda = p.num;
-    if (mate){
-        const a = Math.min(parseInt(p.num,10), parseInt(q.num,10));
-        const b = Math.max(parseInt(p.num,10), parseInt(q.num,10));
-        label = p.zone + a + ' + ' + p.zone + b;
-        celda = a + ' + ' + b;
+    if (grupo){
+        const nums = grupo.map(x => C.tableNumber(x));
+        label = nums.map(x => p.zone + x).join(' + ');
+        celda = nums.join(' + ');
     }
 
     tipMesa.style.setProperty('--accent', sold ? C.soldColor : hex);
@@ -493,9 +494,9 @@ function mesaTip(m){
         <div class="t-meta">
             <div class="t-cell"><span class="t-k">Category</span><span class="t-v">${p.catLabel}</span></div>
             <div class="t-cell"><span class="t-k">Zone</span><span class="t-v">${p.zone}</span></div>
-            <div class="t-cell"><span class="t-k">${mate ? 'Tables' : 'Table'}</span><span class="t-v">${celda}</span></div>
+            <div class="t-cell"><span class="t-k">${grupo ? 'Tables' : 'Table'}</span><span class="t-v">${celda}</span></div>
         </div>
-        ${mate ? `<div class="t-corner">Corner position &middot; these <b>2 tables</b> are booked together and cannot be split.</div>` : ''}
+        ${grupo ? `<div class="t-corner">${bloque ? (C.blocks.label || 'Quarter island') : 'Corner position'} &middot; these <b>${n} tables</b> are booked together and cannot be split.</div>` : ''}
         ${seller ? `<div class="t-seller">Exhibitor · <b>${seller}</b></div>` : ''}
         <div class="t-foot">
             ${sold
@@ -503,7 +504,7 @@ function mesaTip(m){
                 : (price.early
                     ? `<span class="t-old">${price.base}</span><span class="t-new">${price.early}</span><span class="t-eb">−${Math.round(C.earlyBird.discount*100)}%</span>`
                     : `<span class="t-new">${price.base}</span>`)}
-            ${mate && !sold ? `<span class="t-units">2 tables</span>` : ''}
+            ${grupo && !sold ? `<span class="t-units">${n} tables</span>` : ''}
         </div>`;
     place(tipMesa, m.getBoundingClientRect());
 }
@@ -648,6 +649,12 @@ async function sincronizar(){
             paint(m);
         });
         dict.forEach((m,id) => { if (!seen.has(id) && m.classList.contains('sold')){ m.classList.remove('sold'); paint(m); } });
+        /* cuartos de isla: si una mesa del bloque está vendida, se pinta vendido el bloque entero */
+        ((C.blocks && C.blocks.list) || []).forEach(bl => {
+            const els = bl.map(x => dict.get(x)).filter(Boolean);
+            if (els.some(el => el.classList.contains('sold')))
+                els.forEach(el => { if (!el.classList.contains('sold')){ el.classList.add('sold'); paint(el); } });
+        });
     }catch(err){ console.warn('CSV sync:', err.message); }
     loupeReady = false;
     updateLegend();

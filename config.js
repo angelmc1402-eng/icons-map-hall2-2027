@@ -46,6 +46,24 @@ window.ICONS_CONFIG = {
        enabled:false -> sin lupa, y en ×1 vuelven las fichas de mesa */
     loupe: { enabled: true, size: 280, zoom: 3, border: 3 },
 
+    /* CUARTOS DE ISLA · zonas que solo se venden por bloques fijos.
+       Cada bloque = la mesa vertical de la esquina + las 2 horizontales anexas.
+       Precio = suma de las mesas del bloque (3 x tarifa del tipo).
+       Basta con que una mesa del bloque esté vendida para que salga todo el bloque SOLD OUT. */
+    blocks: {
+        label: 'Quarter island',
+        list: [
+            ['TCG-R-1',  'TCG-R-12', 'TCG-R-11'], ['TCG-R-2',  'TCG-R-3',  'TCG-R-4'],
+            ['TCG-R-7',  'TCG-R-5',  'TCG-R-6'],  ['TCG-R-8',  'TCG-R-9',  'TCG-R-10'],
+            ['TCG-R-13', 'TCG-R-24', 'TCG-R-23'], ['TCG-R-14', 'TCG-R-15', 'TCG-R-16'],
+            ['TCG-R-19', 'TCG-R-17', 'TCG-R-18'], ['TCG-R-20', 'TCG-R-21', 'TCG-R-22'],
+            ['TCG-S-1',  'TCG-S-12', 'TCG-S-11'], ['TCG-S-2',  'TCG-S-3',  'TCG-S-4'],
+            ['TCG-S-7',  'TCG-S-5',  'TCG-S-6'],  ['TCG-S-8',  'TCG-S-9',  'TCG-S-10'],
+            ['TCG-S-13', 'TCG-S-24', 'TCG-S-23'], ['TCG-S-14', 'TCG-S-15', 'TCG-S-16'],
+            ['TCG-S-19', 'TCG-S-17', 'TCG-S-18'], ['TCG-S-20', 'TCG-S-21', 'TCG-S-22']
+        ]
+    },
+
     tones: [
         { key: 'light', label: 'Claro' },
         { key: 'base',  label: 'Base' },
@@ -170,7 +188,14 @@ window.ICONS_CONFIG = {
                          isla: String(el.dataset.info || '').replace(/-\d+$/, ''),
                          horiz: w > h, ok: isFinite(x) && isFinite(y) && isFinite(w) && isFinite(h) };
             };
-            const todas = Array.prototype.map.call(nodes, caja).filter(function (b) { return b.id && b.ok; });
+            /* las mesas de un bloque fijo (cuartos de isla) no entran en el emparejado de esquinas */
+            const enBloque = new Map();
+            ((C.blocks && C.blocks.list) || []).forEach(function (bl) {
+                bl.forEach(function (id) { enBloque.set(id, bl.slice()); });
+            });
+            C.corner.blocks = enBloque;
+            const todas = Array.prototype.map.call(nodes, caja)
+                .filter(function (b) { return b.id && b.ok && !enBloque.has(b.id); });
             const H = todas.filter(function (b) { return b.horiz; });
             const V = todas.filter(function (b) { return !b.horiz; });
             const t = C.corner.tol, cand = [];
@@ -198,7 +223,17 @@ window.ICONS_CONFIG = {
             C.corner.pairs = pares;
             return pares.size / 2;
         },
+        blocks:  new Map(),  /* id de mesa -> ids del cuarto de isla */
         partner: function (id) { return C.corner.pairs.get(id) || null; },
-        is:      function (id) { return C.corner.pairs.has(id); }
+        is:      function (id) { return C.corner.pairs.has(id) || C.corner.blocks.has(id); },
+        isBlock: function (id) { return C.corner.blocks.has(id); },
+        /* todas las mesas que se contratan con esta (ella incluida), ordenadas por número;
+           null si se vende suelta */
+        group:   function (id) {
+            let ids = C.corner.blocks.get(id);
+            if (!ids) { const m = C.corner.pairs.get(id); ids = m ? [id, m] : null; }
+            if (!ids) return null;
+            return ids.slice().sort(function (a, b) { return C.tableNumber(a) - C.tableNumber(b); });
+        }
     };
 })();
