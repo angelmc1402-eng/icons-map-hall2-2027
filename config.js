@@ -70,6 +70,38 @@ window.ICONS_CONFIG = {
         { key: 'dark',  label: 'Oscuro' }
     ],
 
+    /* STANDS · huecos verdes del plano (relleno #8BEDC3, borde #00857C), en px del PNG.
+       Los usa builder-sellers.html para crear sellers encajados al milímetro, y el mapa
+       público para el redondeo del logo. Si cambia el PNG, se regeneran con el script de detección.
+       r = radio de esquina en px del plano. */
+    stands: {
+        imageW: 7686, imageH: 5372,
+        freeRadius: 14,
+        list: [
+            { id:'S01', group:'TCG Stands', x:3011, y:565, w:233, h:381, r:27 },
+            { id:'S02', group:'TCG Stands', x:3452, y:565, w:232, h:381, r:27 },
+            { id:'S03', group:'TCG Stands', x:3849, y:566, w:233, h:380, r:27 },
+            { id:'S04', group:'TCG Stands', x:2967, y:1346, w:321, h:618, r:27 },
+            { id:'S05', group:'TCG Stands', x:3452, y:1348, w:232, h:618, r:27 },
+            { id:'S06', group:'TCG Stands', x:3849, y:1347, w:233, h:618, r:27 },
+            { id:'S07', group:'Sports Card Stands', x:4422, y:1424, w:321, h:618, r:27 },
+            { id:'S08', group:'TCG Stands', x:2967, y:2209, w:321, h:795, r:27 },
+            { id:'S09', group:'TCG Stands', x:3452, y:2209, w:232, h:795, r:27 },
+            { id:'S10', group:'TCG Stands', x:3849, y:2208, w:233, h:795, r:27 },
+            { id:'S11', group:'Sports Card Stands', x:4422, y:2318, w:321, h:795, r:27 },
+            { id:'S12', group:'TCG Stands', x:3011, y:3215, w:381, h:233, r:27 },
+            { id:'S13', group:'TCG Stands', x:3658, y:3215, w:381, h:233, r:27 },
+            { id:'S14', group:'Sports Card Stands', x:4392, y:3274, w:381, h:232, r:27 },
+            { id:'S15', group:'Stands TCG', x:879, y:3504, w:354, h:337, r:27 },
+            { id:'S16', group:'Stands TCG', x:1246, y:3504, w:354, h:337, r:27 },
+            { id:'S17', group:'Stands TCG', x:1614, y:3504, w:354, h:337, r:27 },
+            { id:'S18', group:'Stands TCG', x:2268, y:3504, w:354, h:337, r:27 },
+            { id:'S19', group:'TCG Stands', x:3011, y:3623, w:381, h:233, r:27 },
+            { id:'S20', group:'TCG Stands', x:3658, y:3623, w:381, h:233, r:27 },
+            { id:'S21', group:'Sports Card Stands', x:4392, y:3682, w:381, h:232, r:27 }
+        ]
+    },
+
     /* medidas del builder, en % del plano. Mesa real de HALL 2: 86x26 px sobre 7686x5372 */
     defaults: {
         horizontal: { w: 1.1189, h: 0.4840 },
@@ -115,6 +147,59 @@ window.ICONS_CONFIG = {
         g = Math.max(0, Math.min(255, Math.round(g * (1 - amount))));
         b = Math.max(0, Math.min(255, Math.round(b * (1 - amount))));
         return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+    };
+
+    /* ---- STANDS (huecos verdes) ------------------------------------ */
+    /* slot en px del plano -> caja en % del plano + radio en % de la propia caja */
+    C.standBox = function (s) {
+        const W = C.stands.imageW, H = C.stands.imageH;
+        return { id: s.id, group: s.group, r: s.r,
+                 l: s.x / W * 100, t: s.y / H * 100, w: s.w / W * 100, h: s.h / H * 100 };
+    };
+    C.standById = function (id) {
+        const s = ((C.stands && C.stands.list) || []).find(function (x) { return x.id === id; });
+        return s ? C.standBox(s) : null;
+    };
+    /* stand cuyo marco contiene el punto (x, y en % del plano) */
+    C.standAt = function (x, y) {
+        const l = (C.stands && C.stands.list) || [];
+        for (let i = 0; i < l.length; i++) {
+            const b = C.standBox(l[i]);
+            if (x >= b.l && x <= b.l + b.w && y >= b.t && y <= b.t + b.h) return b;
+        }
+        return null;
+    };
+    /* border-radius CSS para una caja de wPct x hPct (% del plano) con radio rPx (px del plano).
+       En % de la propia caja, así escala con el zoom y nunca se sale del marco. */
+    C.radiusCss = function (wPct, hPct, rPx) {
+        const W = (C.stands && C.stands.imageW) || 1, H = (C.stands && C.stands.imageH) || 1;
+        const wpx = wPct / 100 * W, hpx = hPct / 100 * H;
+        if (!(wpx > 0 && hpx > 0)) return '';
+        const r = Math.min(rPx, wpx / 2, hpx / 2);
+        return (r / wpx * 100).toFixed(3) + '% / ' + (r / hpx * 100).toFixed(3) + '%';
+    };
+
+    /* encaja un .sponsor-zone del mapa público: si trae data-slot (o cae dentro de un
+       stand verde con tamaño parecido) toma la geometría exacta del stand, y le pone el
+       mismo redondeo. Devuelve false si el seller no tiene ni nombre ni logo (no se pinta). */
+    C.fitSeller = function (el) {
+        if (!(el.dataset.name || '').trim() && !(el.dataset.logo || '').trim()) return false;
+        const p = function (v) { return parseFloat(String(v || '').replace('%', '')) || 0; };
+        let w = p(el.style.width), h = p(el.style.height);
+        let b = el.dataset.slot ? C.standById(el.dataset.slot) : null;
+        if (!b && C.stands) {
+            const c = C.standAt(p(el.style.left) + w / 2, p(el.style.top) + h / 2);
+            if (c && (w * h) / (c.w * c.h) >= 0.4) b = c;
+        }
+        let r = parseFloat(el.dataset.r) || (C.stands && C.stands.freeRadius) || 14;
+        if (b) {
+            el.style.left = b.l + '%'; el.style.top = b.t + '%';
+            el.style.width = b.w + '%'; el.style.height = b.h + '%';
+            w = b.w; h = b.h; r = b.r;
+        }
+        const css = C.radiusCss(w, h, r);
+        if (css) el.style.borderRadius = css;
+        return true;
     };
 
     /* "DIECAST-A-1" -> "DIECAST-A" */

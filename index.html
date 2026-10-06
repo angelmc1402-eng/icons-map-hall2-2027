@@ -58,10 +58,15 @@ body.lvl-0 .mesa{pointer-events:none}
 body.no-loupe .mesa{pointer-events:auto}
 
 /* SELLERS */
-.sponsor-zone{position:absolute;pointer-events:auto;transition:transform .18s cubic-bezier(.2,.9,.3,1.2);cursor:pointer}
-.sponsor-zone:hover{transform:scale(1.07);z-index:9000}
-.sponsor-logo-box{width:100%;height:100%;background:#fff;border-radius:7px;box-shadow:0 3px 10px rgba(11,18,32,.18);display:flex;align-items:center;justify-content:center;padding:4px;border:1.5px solid #fff;transition:border-color .18s}
-.sponsor-zone:hover .sponsor-logo-box{border-color:var(--seller)}
+.sponsor-zone{position:absolute;pointer-events:auto;cursor:pointer;border-radius:7px}
+.sponsor-zone:hover{z-index:9000}
+/* el logo ocupa exactamente el marco del stand verde (misma caja, mismo redondeo);
+   el hover se dibuja hacia dentro, así nunca se sale del marco */
+.sponsor-logo-box{width:100%;height:100%;box-sizing:border-box;background:#fff;border-radius:inherit;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:9%;box-shadow:inset 0 0 0 1.5px rgba(0,133,124,.9);transition:box-shadow .18s}
+.sponsor-zone:hover .sponsor-logo-box{box-shadow:inset 0 0 0 2.5px var(--seller),inset 0 0 0 6px rgba(124,58,237,.14)}
+/* invisible: el logo ya está impreso en el plano; solo hover + ficha */
+.sponsor-zone.ghost .sponsor-logo-box{background:transparent;box-shadow:none;padding:0}
+.sponsor-zone.ghost:hover .sponsor-logo-box{box-shadow:inset 0 0 0 2.5px var(--seller);background:rgba(124,58,237,.06)}
 .sponsor-logo-box img{width:100%;height:100%;object-fit:contain}
 .sponsor-logo-box.multi-logo{display:grid;gap:3px;align-items:stretch;justify-items:stretch}
 .sponsor-logo-box.multi-logo img{min-width:0;min-height:0}
@@ -510,7 +515,6 @@ const WEB_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 function showSellerTip(sp){
     const name = sp.dataset.name || '', ig = sp.dataset.ig || '', web = sp.dataset.web || '';
     tipSeller.innerHTML = `
-        <div class="s-tag">Exhibitor</div>
         <div class="s-name">${name}</div>
         <div class="s-links">
             ${ig  ? `<a class="s-btn ig" href="${ig}" target="_blank" rel="noopener"><img draggable="false" src="${IG_ICON}" alt=""> Instagram</a>` : ''}
@@ -522,6 +526,7 @@ async function cargarSellers(){
     const resp = await fetch('seller.html?v=' + Date.now(), { cache:'no-store' });
     if (!resp.ok) return;
     capaSell.innerHTML = await resp.text();
+    capaSell.querySelectorAll('.sponsor-zone').forEach(sp => { if (!C.fitSeller(sp)) sp.remove(); });
     capaSell.querySelectorAll('.sponsor-zone').forEach(sp => {
         const name = sp.dataset.name || '', logo = sp.dataset.logo || '';
         const legacy = sp.dataset.dual === 'true';
@@ -529,7 +534,9 @@ async function cargarSellers(){
         const counts = {'single':1,'dual-horizontal':2,'dual-vertical':2,'triple-vertical':3,'quad-vertical':4};
         const layout = counts[req] ? req : 'single';
         const cls = layout === 'single' ? 'sponsor-logo-box' : `sponsor-logo-box multi-logo layout-${layout}`;
-        sp.innerHTML = `<div class="${cls}">${
+        const ghost = sp.dataset.invisible === 'true';
+        sp.classList.toggle('ghost', ghost);
+        sp.innerHTML = ghost ? `<div class="sponsor-logo-box" aria-label="${name}"></div>` : `<div class="${cls}">${
             logo ? Array.from({length:counts[layout]}, () => `<img draggable="false" src="${logo}" alt="${name}">`).join('')
                  : `<span style="font-size:9px;font-weight:800;color:#334155">${name}</span>`}</div>`;
         if (isTouch){

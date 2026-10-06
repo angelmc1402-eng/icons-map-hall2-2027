@@ -19,14 +19,37 @@ body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
 
 .zone{
     position:absolute;pointer-events:auto;cursor:move;box-sizing:border-box;
-    border:2px dashed var(--purple);background:rgba(139,92,246,.16);border-radius:6px;
+    border:0;background:#fff;border-radius:14px;
+    box-shadow:inset 0 0 0 5px rgba(0,133,124,.85);
     display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
-.zone.sel{border-style:solid;border-color:var(--orange);background:rgba(255,159,67,.24);box-shadow:0 0 0 1.5px #0f172a,0 0 16px rgba(255,159,67,.9);z-index:500}
-.zone .inner{width:100%;height:100%;background:#fff;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:3px;pointer-events:none}
+.zone.free{border:3px dashed var(--purple);box-shadow:none}
+.zone.empty{background:rgba(255,255,255,.92);border:4px dashed var(--orange);box-shadow:none}
+.zone.sel{border:5px solid var(--orange);box-shadow:inset 0 0 0 2px #0f172a;z-index:500}
+.zone .inner{width:100%;height:100%;background:#fff;border-radius:inherit;display:flex;align-items:center;justify-content:center;padding:9%;pointer-events:none}
+.zone.empty .inner{background:transparent}
+/* invisible: el logo ya está impreso en el plano; solo zona de hover + ficha */
+.zone.ghost{background:rgba(0,210,211,.10);border:4px dashed var(--cyan);box-shadow:none}
+.zone.ghost .inner{background:transparent;align-items:flex-start;justify-content:flex-start;padding:10px}
+.zone.ghost .ph{font-size:22px;color:#fff;background:rgba(15,23,42,.75);border-radius:8px;padding:4px 10px}
+.zone.ghost.sel{border:5px solid var(--orange)}
+.chk{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:11px;font-weight:800;color:var(--ink);cursor:pointer;text-transform:none;letter-spacing:0}
+.chk input{width:auto;margin:0}
 .zone .inner.multi{display:grid;gap:2px}
 .zone .inner img{width:100%;height:100%;object-fit:contain;min-width:0;min-height:0}
-.zone .ph{font-size:9px;font-weight:900;color:#64748b;text-align:center;line-height:1.15;padding:2px}
+.zone .ph{font-size:30px;font-weight:900;color:#334155;text-align:center;line-height:1.15;padding:4px;word-break:break-word}
+.zone.empty .ph{color:#c2410c}
+
+/* huecos verdes del plano: clic = crear seller encajado */
+#capa-slots{position:absolute;inset:0;pointer-events:none}
+#capa-slots.off{display:none}
+.slot{position:absolute;box-sizing:border-box;pointer-events:auto;cursor:pointer;
+    border:4px dashed rgba(0,133,124,.75);background:rgba(255,255,255,0);
+    display:flex;align-items:center;justify-content:center;transition:background .12s,border-color .12s}
+.slot span{font-size:34px;font-weight:900;color:#00857c;opacity:.0;transition:opacity .12s;text-align:center;line-height:1.1;pointer-events:none}
+.slot:hover{background:rgba(255,255,255,.7);border-color:#00857c;border-style:solid}
+.slot:hover span{opacity:1}
+.slot.taken{display:none}
 .lay-dual-horizontal{grid-template-columns:repeat(2,minmax(0,1fr))}
 .lay-dual-vertical{grid-template-rows:repeat(2,minmax(0,1fr))}
 .lay-triple-vertical{grid-template-rows:repeat(3,minmax(0,1fr))}
@@ -105,7 +128,15 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
     </div>
 
     <div class="box">
-        <div class="box-title">Nuevo seller</div>
+        <div class="box-title">Stands del plano <span id="slot-count" class="val"></span></div>
+        <div class="note" style="margin-top:0">Los huecos verdes ya están marcados y encajados al píxel. <b>Clic en uno</b> → se crea el seller y solo tienes que poner nombre, logo y enlaces. Hasta que no tenga nombre o logo <b>no se exporta</b>, así que no sale en el mapa público.</div>
+        <button class="btn b-light" style="margin-top:8px" onclick="toggleSlots()" id="btn-slots">Ocultar huecos</button>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Nuevo seller libre</div>
+        <label>Tamaño predefinido</label>
+        <select id="n-preset" onchange="applyPreset()"></select>
         <label>Nombre</label>
         <input type="text" id="n-name" placeholder="Kryptonia Collectibles">
         <label style="margin-top:7px">URL del logo</label>
@@ -115,7 +146,7 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
             <div><label>Alto %</label><input type="number" step="0.01" id="n-h" value="1.40"></div>
         </div>
         <button class="btn b-purple" style="margin-top:9px" onclick="spawn()">➕ Crear en el centro de la vista</button>
-        <div class="note">Se crea vacío y lo colocas arrastrando. Los datos (IG, web, layout) se rellenan en el panel de la derecha.</div>
+        <div class="note">Para logos fuera de los huecos verdes. Si lo sueltas encima de un stand, se encaja solo.</div>
     </div>
 
     <div class="box">
@@ -137,6 +168,15 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
     </div>
 
     <div class="box">
+        <div class="box-title">Stand</div>
+        <div id="p-slot" style="font-size:12px;font-weight:800;color:var(--ink)">—</div>
+        <div class="g2" style="margin-top:7px">
+            <button class="btn b-light b-xs" onclick="snapToSlot()">Encajar en stand</button>
+            <button class="btn b-light b-xs" onclick="unlinkSlot()">Soltar (libre)</button>
+        </div>
+    </div>
+
+    <div class="box">
         <div class="box-title">Ficha</div>
         <label>Nombre</label>
         <input type="text" id="p-name" oninput="live('name',this.value)">
@@ -146,6 +186,8 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
         <input type="text" id="p-ig" oninput="live('ig',this.value)">
         <label style="margin-top:7px">Web</label>
         <input type="text" id="p-web" oninput="live('web',this.value)">
+        <label class="chk"><input type="checkbox" id="p-ghost" onchange="setGhost(this.checked)"> Invisible (el logo ya está en el plano)</label>
+        <div class="note" style="margin-top:3px">No pinta caja ni logo en el mapa público: solo la zona de hover y la ficha con IG y web.</div>
     </div>
 
     <div class="box">
@@ -212,6 +254,7 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
     <div id="container">
         <img draggable="false" id="map-img" alt="Plano">
         <div id="capa-mesas-ref" style="position:absolute;inset:0;pointer-events:none;display:none"></div>
+        <div id="capa-slots"></div>
         <div id="capa"></div>
         <div class="handle" id="handle"></div>
     </div>
@@ -232,6 +275,9 @@ const container = document.getElementById('container');
 const mapImg = document.getElementById('map-img');
 const capa = document.getElementById('capa');
 const capaRef = document.getElementById('capa-mesas-ref');
+const capaSlots = document.getElementById('capa-slots');
+const STANDS = ((C.stands && C.stands.list) || []).map(C.standBox);
+const FREE_R = (C.stands && C.stands.freeRadius) || 14;
 const props = document.getElementById('props');
 const handle = document.getElementById('handle');
 
@@ -244,6 +290,7 @@ window.addEventListener('load', () => {
 });
 function init(){
     fitView();
+    buildSlots(); buildPresets();
     viewport.addEventListener('wheel', onWheel, {passive:false});
     loadFromFile();
     loadMesasRef();
@@ -264,15 +311,26 @@ function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;
 
 const LAYOUTS = {'single':1,'dual-horizontal':2,'dual-vertical':2,'triple-vertical':3,'quad-vertical':4};
 
+function isEmpty(z){ return !(z.dataset.name||'').trim() && !(z.dataset.logo||'').trim(); }
+function applyRadius(z){
+    const r = parseFloat(z.dataset.r) || FREE_R;
+    z.style.borderRadius = C.radiusCss(pct(z.style.width), pct(z.style.height), r);
+}
 function render(z){
     const layout = z.dataset.logoLayout || 'single';
     const n = LAYOUTS[layout] || 1;
     const logo = z.dataset.logo || '';
-    const name = z.dataset.name || 'Sin nombre';
+    const name = z.dataset.name || '';
     const cls = layout === 'single' ? 'inner' : `inner multi lay-${layout}`;
+    z.classList.toggle('free', !z.dataset.slot);
+    z.classList.toggle('empty', isEmpty(z));
+    const ghost = z.dataset.invisible === 'true';
+    z.classList.toggle('ghost', ghost);
+    if (ghost){ applyRadius(z); z.innerHTML = `<div class="inner"><span class="ph">👻 ${esc(name || 'Añade nombre')}</span></div>`; return; }
+    applyRadius(z);
     z.innerHTML = logo
         ? `<div class="${cls}">${Array.from({length:n},()=>`<img draggable="false" src="${esc(logo)}" alt="">`).join('')}</div>`
-        : `<div class="inner"><span class="ph">${esc(name)}</span></div>`;
+        : `<div class="inner"><span class="ph">${esc(name || 'Añade nombre')}</span></div>`;
 }
 
 function makeZone(o){
@@ -282,7 +340,10 @@ function makeZone(o){
     z.dataset.logo = o.logo || '';
     z.dataset.ig = o.ig || '';
     z.dataset.web = o.web || '';
+    if (o.ghost) z.dataset.invisible = 'true';
     z.dataset.logoLayout = o.layout || 'single';
+    if (o.slot) z.dataset.slot = o.slot;
+    if (o.r) z.dataset.r = o.r;
     z.style.left = f4(o.l)+'%'; z.style.top = f4(o.t)+'%';
     z.style.width = f4(o.w)+'%'; z.style.height = f4(o.h)+'%';
     render(z);
@@ -300,12 +361,15 @@ function select(z){
     zones().forEach(x => x.classList.toggle('sel', x === z));
     if (!z){ props.classList.remove('on'); handle.classList.remove('on'); refreshList(); return; }
     props.classList.add('on');
-    document.getElementById('sel-title').textContent = z.dataset.name || 'Seller sin nombre';
+    document.getElementById('sel-title').textContent = z.dataset.name || 'Seller nuevo';
     document.getElementById('p-name').value = z.dataset.name || '';
     document.getElementById('p-logo').value = z.dataset.logo || '';
     document.getElementById('p-ig').value = z.dataset.ig || '';
     document.getElementById('p-web').value = z.dataset.web || '';
+    document.getElementById('p-ghost').checked = z.dataset.invisible === 'true';
     document.getElementById('p-layout').value = z.dataset.logoLayout || 'single';
+    const sb = z.dataset.slot ? C.standById(z.dataset.slot) : null;
+    document.getElementById('p-slot').textContent = sb ? `${sb.id} · ${sb.group}` : 'Libre (no encajado en un stand)';
     syncSize(); syncPos(); drawHandle(); refreshList();
 }
 function deselect(){ select(null); }
@@ -340,9 +404,96 @@ function refreshList(){
     document.getElementById('count').textContent = all.length;
     box.innerHTML = all.map((z,i) =>
         `<div class="list-item ${z===sel?'on':''}" onclick="pickIndex(${i})">
-            <span>${esc(z.dataset.name || '(sin nombre)')}</span>
-            <span>${pct(z.style.left).toFixed(1)},${pct(z.style.top).toFixed(1)}</span>
+            <span>${z.dataset.invisible==='true'?'👻 ':''}${esc(z.dataset.name || (z.dataset.logo ? '(sin nombre)' : '⚠ sin datos'))}</span>
+            <span>${z.dataset.slot || (pct(z.style.left).toFixed(1)+','+pct(z.style.top).toFixed(1))}</span>
          </div>`).join('') || '<div class="list-item">Sin sellers</div>';
+    updateSlots();
+}
+
+/* huecos verdes */
+let slotsOn = true;
+function buildSlots(){
+    capaSlots.innerHTML = '';
+    STANDS.forEach(b => {
+        const d = document.createElement('div');
+        d.className = 'slot'; d.dataset.slot = b.id;
+        d.style.left = f4(b.l)+'%'; d.style.top = f4(b.t)+'%';
+        d.style.width = f4(b.w)+'%'; d.style.height = f4(b.h)+'%';
+        d.style.borderRadius = C.radiusCss(b.w, b.h, b.r);
+        d.title = `${b.id} · ${b.group}`;
+        d.innerHTML = `<span>＋<br>${esc(b.id)}</span>`;
+        d.addEventListener('click', () => { if (!panMoved) fillSlot(b); });
+        capaSlots.appendChild(d);
+    });
+    updateSlots();
+}
+function updateSlots(){
+    const taken = new Set(zones().map(z => z.dataset.slot).filter(Boolean));
+    capaSlots.querySelectorAll('.slot').forEach(d => d.classList.toggle('taken', taken.has(d.dataset.slot)));
+    const el = document.getElementById('slot-count');
+    if (el) el.textContent = `${STANDS.length - taken.size} libres / ${STANDS.length}`;
+}
+function toggleSlots(){
+    slotsOn = !slotsOn;
+    capaSlots.classList.toggle('off', !slotsOn);
+    document.getElementById('btn-slots').textContent = slotsOn ? 'Ocultar huecos' : 'Ver huecos';
+}
+function fitToStand(z, b){
+    z.dataset.slot = b.id; z.dataset.r = b.r;
+    z.style.left = f4(b.l)+'%'; z.style.top = f4(b.t)+'%';
+    z.style.width = f4(b.w)+'%'; z.style.height = f4(b.h)+'%';
+}
+function fillSlot(b){
+    snap();
+    const z = makeZone({ l:b.l, t:b.t, w:b.w, h:b.h, slot:b.id, r:b.r });
+    capa.appendChild(z); select(z);
+    const n = document.getElementById('p-name'); n.focus();
+    msg(`${b.id} listo: pon nombre y logo.`,'ok');
+}
+function snapToSlot(){
+    if (!sel) return;
+    const b = C.standAt(pct(sel.style.left)+pct(sel.style.width)/2, pct(sel.style.top)+pct(sel.style.height)/2);
+    if (!b) return msg('El centro del seller no cae en ningún stand verde.','err');
+    const other = zones().find(z => z !== sel && z.dataset.slot === b.id);
+    if (other) return msg(`${b.id} ya lo ocupa «${other.dataset.name||'otro seller'}».`,'err');
+    snap(); fitToStand(sel, b); render(sel); select(sel);
+    msg(`Encajado en ${b.id}.`,'ok');
+}
+function unlinkSlot(){
+    if (!sel || !sel.dataset.slot) return;
+    snap(); delete sel.dataset.slot; delete sel.dataset.r; render(sel); select(sel);
+}
+/* al soltar un seller arrastrado: si cae en un stand libre, se encaja */
+function magnet(z){
+    const b = C.standAt(pct(z.style.left)+pct(z.style.width)/2, pct(z.style.top)+pct(z.style.height)/2);
+    if (!b){ if (z.dataset.slot){ delete z.dataset.slot; delete z.dataset.r; render(z); } return; }
+    if (zones().some(o => o !== z && o.dataset.slot === b.id)) return;
+    fitToStand(z, b); render(z);
+}
+/* predefinidos: un tamaño por cada medida distinta de stand */
+function buildPresets(){
+    const sel_ = document.getElementById('n-preset');
+    const out = [];
+    STANDS.forEach(b => {
+        const s = C.stands.list.find(x => x.id === b.id);
+        const hit = out.find(o => Math.abs(o.s.w - s.w) <= 8 && Math.abs(o.s.h - s.h) <= 8);
+        if (hit){ hit.n++; return; }
+        const k = s.w / s.h;
+        const kind = Math.max(s.w, s.h) < 200 ? 'Stand pequeño' : k > 1.6 ? 'Stand horizontal' : k < 0.75 ? 'Stand vertical' : 'Stand cuadrado';
+        out.push({b, s, n:1, kind});
+    });
+    out.sort((x,y) => y.n - x.n);
+    sel_.innerHTML = '<option value="">Libre (medida manual)</option>' +
+        out.map((o,i) => `<option value="${i}">${o.kind} · ${o.s.w}×${o.s.h} px · ${o.n} en el plano</option>`).join('');
+    buildPresets.list = out;
+}
+function applyPreset(){
+    const v = document.getElementById('n-preset').value;
+    if (v === '') return;
+    const o = buildPresets.list[+v];
+    document.getElementById('n-w').value = o.b.w.toFixed(3);
+    document.getElementById('n-h').value = o.b.h.toFixed(3);
+    applyPreset.r = o.b.r;
 }
 function pickIndex(i){
     const z = zones()[i];
@@ -358,8 +509,8 @@ function pickIndex(i){
 /* undo */
 function serialize(){
     return zones().map(z => ({
-        name:z.dataset.name, logo:z.dataset.logo, ig:z.dataset.ig, web:z.dataset.web,
-        layout:z.dataset.logoLayout||'single',
+        name:z.dataset.name, logo:z.dataset.logo, ig:z.dataset.ig, web:z.dataset.web, ghost:z.dataset.invisible==='true',
+        layout:z.dataset.logoLayout||'single', slot:z.dataset.slot||'', r:z.dataset.r||'',
         l:pct(z.style.left), t:pct(z.style.top), w:pct(z.style.width), h:pct(z.style.height)
     }));
 }
@@ -425,12 +576,23 @@ function parseInto(html, source){
     }
     snap(); capa.innerHTML=''; sel=null;
     found.forEach(el => capa.appendChild(makeZone({
-        name:el.dataset.name, logo:el.dataset.logo, ig:el.dataset.ig, web:el.dataset.web,
+        name:el.dataset.name, logo:el.dataset.logo, ig:el.dataset.ig, web:el.dataset.web, ghost:el.dataset.invisible==='true',
         layout: el.dataset.logoLayout || (el.dataset.dual==='true' ? 'dual-vertical' : 'single'),
+        slot: el.dataset.slot || '', r: el.dataset.r || '',
         l:pct(el.style.left), t:pct(el.style.top), w:pct(el.style.width)||1, h:pct(el.style.height)||1
     })));
+    /* los que caen en un stand verde y no estaban encajados, se encajan */
+    let fixed = 0;
+    zones().forEach(z => {
+        if (z.dataset.slot){ const b = C.standById(z.dataset.slot); if (b){ fitToStand(z,b); render(z); } return; }
+        const b = C.standAt(pct(z.style.left)+pct(z.style.width)/2, pct(z.style.top)+pct(z.style.height)/2);
+        if (!b || zones().some(o => o.dataset.slot === b.id)) return;
+        const area = pct(z.style.width)*pct(z.style.height) / (b.w*b.h);
+        if (area < .4) return;
+        fitToStand(z,b); render(z); fixed++;
+    });
     select(null);
-    msg(`${source}: ${found.length} sellers.`,'ok');
+    msg(`${source}: ${found.length} sellers` + (fixed ? ` · ${fixed} encajados en su stand` : '') + '.','ok');
 }
 function clearAll(){
     if (!confirm('¿Vaciar todos los sellers?')) return;
@@ -471,20 +633,21 @@ function spawn(){
     const z = makeZone({
         name: document.getElementById('n-name').value.trim(),
         logo: document.getElementById('n-logo').value.trim(),
-        l: cx-w/2, t: cy-h/2, w, h
+        l: cx-w/2, t: cy-h/2, w, h,
+        r: document.getElementById('n-preset').value !== '' ? applyPreset.r : ''
     });
     capa.appendChild(z);
     select(z);
     document.getElementById('n-name').value = '';
     document.getElementById('n-logo').value = '';
-    msg('Seller creado. Arrástralo a su sitio.','ok');
+    msg('Seller creado. Arrástralo a su sitio (encima de un stand verde se encaja solo).','ok');
 }
 function dup(){
     if (!sel) return;
     snap();
     const z = makeZone({
-        name:sel.dataset.name, logo:sel.dataset.logo, ig:sel.dataset.ig, web:sel.dataset.web,
-        layout:sel.dataset.logoLayout,
+        name:sel.dataset.name, logo:sel.dataset.logo, ig:sel.dataset.ig, web:sel.dataset.web, ghost:sel.dataset.invisible==='true',
+        layout:sel.dataset.logoLayout, r:sel.dataset.r||'',
         l:pct(sel.style.left)+pct(sel.style.width)+0.15, t:pct(sel.style.top),
         w:pct(sel.style.width), h:pct(sel.style.height)
     });
@@ -509,6 +672,12 @@ function live(field, value){
     if (field==='web') sel.dataset.web = value.trim();
     render(sel); refreshList();
 }
+function setGhost(on){
+    if (!sel) return;
+    snap();
+    if (on) sel.dataset.invisible = 'true'; else delete sel.dataset.invisible;
+    render(sel); refreshList();
+}
 function applyLayout(){
     if (!sel) return;
     snap();
@@ -522,7 +691,8 @@ function sizeLive(dim, v){
     if (!sel) return;
     const val = Math.max(.1, parseFloat(v)||.1);
     sel.style[dim==='w'?'width':'height'] = f4(val)+'%';
-    syncSize(); drawHandle();
+    if (sel.dataset.slot){ delete sel.dataset.slot; render(sel); document.getElementById('p-slot').textContent = 'Libre (no encajado en un stand)'; }
+    applyRadius(sel); syncSize(); drawHandle();
 }
 function sizeSet(dim,v){ if(!sel) return; snap(); sizeLive(dim,v); }
 function swapWH(){
@@ -530,7 +700,8 @@ function swapWH(){
     snap();
     const w = pct(sel.style.width), h = pct(sel.style.height);
     sel.style.width = f4(h)+'%'; sel.style.height = f4(w)+'%';
-    syncSize(); drawHandle();
+    if (sel.dataset.slot){ delete sel.dataset.slot; render(sel); }
+    applyRadius(sel); syncSize(); drawHandle();
 }
 function snapToMesa(){
     if (!sel) return;
@@ -551,6 +722,7 @@ function snapToMesa(){
     sel.style.top = f4(pct(best.style.top))+'%';
     sel.style.width = f4(pct(best.style.width))+'%';
     sel.style.height = f4(pct(best.style.height))+'%';
+    delete sel.dataset.slot; delete sel.dataset.r; render(sel);
     syncSize(); syncPos(); drawHandle();
     msg('Ajustado a ' + (best.dataset.info||'mesa') + '.','ok');
 }
@@ -588,7 +760,12 @@ document.addEventListener('mousemove', e => {
     sel.style.top = f4(moving.t + n.y - moving.start.y)+'%';
     syncPos(); drawHandle();
 });
-document.addEventListener('mouseup', () => { if (moving){ moving=null; refreshList(); } });
+document.addEventListener('mouseup', () => {
+    if (!moving) return;
+    moving = null;
+    if (sel){ magnet(sel); select(sel); }
+    refreshList();
+});
 
 handle.addEventListener('mousedown', e => {
     if (!sel) return;
@@ -599,7 +776,8 @@ handle.addEventListener('mousedown', e => {
         const n = mouseToPct(ev);
         sel.style.width = f4(Math.max(.1, n.x - l))+'%';
         sel.style.height = f4(Math.max(.1, n.y - t))+'%';
-        syncSize(); drawHandle();
+        if (sel.dataset.slot){ delete sel.dataset.slot; sel.classList.add('free'); }
+        applyRadius(sel); syncSize(); drawHandle();
     };
     const up = () => { document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); };
     document.addEventListener('mousemove', move);
@@ -607,15 +785,17 @@ handle.addEventListener('mousedown', e => {
 });
 
 /* pan y zoom */
-let panning = null;
+let panning = null, panMoved = false;
 viewport.addEventListener('mousedown', e => {
     if (e.target.closest('.zone') || e.target === handle) return;
     panning = {x:e.clientX, y:e.clientY, sl:viewport.scrollLeft, st:viewport.scrollTop};
+    panMoved = false;
     viewport.classList.add('panning');
     deselect();
 });
 document.addEventListener('mousemove', e => {
     if (!panning) return;
+    if (Math.abs(e.clientX-panning.x) + Math.abs(e.clientY-panning.y) > 4) panMoved = true;
     viewport.scrollLeft = panning.sl - (e.clientX-panning.x);
     viewport.scrollTop = panning.st - (e.clientY-panning.y);
 });
@@ -683,15 +863,20 @@ document.addEventListener('keydown', e => {
 
 /* exportar */
 function exportLines(){
-    return zones().map(z => {
+    return zones().filter(z => !isEmpty(z)).map(z => {
         const layout = z.dataset.logoLayout && z.dataset.logoLayout !== 'single'
             ? ` data-logo-layout="${z.dataset.logoLayout}"` : '';
-        return `<div class="sponsor-zone" style="left: ${f4(pct(z.style.left))}%; top: ${f4(pct(z.style.top))}%; width: ${f4(pct(z.style.width))}%; height: ${f4(pct(z.style.height))}%;" data-name="${esc(z.dataset.name)}" data-logo="${esc(z.dataset.logo)}" data-ig="${esc(z.dataset.ig)}" data-web="${esc(z.dataset.web)}"${layout}></div>`;
+        const slot = z.dataset.slot ? ` data-slot="${esc(z.dataset.slot)}"` : '';
+        const r = ` data-r="${esc(z.dataset.r || FREE_R)}"`;
+        const ghost = z.dataset.invisible === 'true' ? ' data-invisible="true"' : '';
+        return `<div class="sponsor-zone" style="left: ${f4(pct(z.style.left))}%; top: ${f4(pct(z.style.top))}%; width: ${f4(pct(z.style.width))}%; height: ${f4(pct(z.style.height))}%;" data-name="${esc(z.dataset.name)}" data-logo="${esc(z.dataset.logo)}" data-ig="${esc(z.dataset.ig)}" data-web="${esc(z.dataset.web)}"${slot}${r}${ghost}${layout}></div>`;
     }).join('\n') + '\n';
 }
 function doExport(copyOnly){
-    const all = zones();
-    if (!all.length) return alert('No hay sellers que exportar.');
+    const skipped = zones().filter(isEmpty).length;
+    const all = zones().filter(z => !isEmpty(z));
+    if (!all.length) return alert('No hay sellers con datos que exportar.');
+    if (skipped) msg(`${skipped} stand(s) sin nombre ni logo no se exportan.`,'err');
     const html = exportLines();
     const area = document.getElementById('clip');
     area.value = html; area.select();
