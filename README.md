@@ -175,5 +175,6 @@ del PNG, con su radio de esquina. Se sacaron con `detect-stands.py`; si cambia e
 - **Mapa público**: el logo ocupa exactamente el marco verde; el hover no escala, se dibuja hacia dentro.
   El tooltip del seller ya no lleva la etiqueta «Exhibitor».
 - **Invisible** (casilla en la ficha → `data-invisible="true"`): para marcas ya impresas en el plano. No pinta caja ni logo, solo la zona de hover y la ficha con IG y web.
+- `config.js` se carga como `config.js?v=AAAAMMDD`: al cambiar config.js, sube también la fecha en los HTML (index, filters, builder, builder-sellers) para que nadie se quede con una versión en caché.
 - «Nuevo seller libre» tiene tamaños predefinidos (uno por cada medida de stand del plano) para logos fuera
   de los huecos.

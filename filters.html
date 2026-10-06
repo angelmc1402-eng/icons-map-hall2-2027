@@ -259,7 +259,7 @@ body.zoom-1 .mesa{pointer-events:none}
 <div class="tip" id="tip-mesa"></div>
 <div class="tip" id="tip-seller"></div>
 
-<script src="config.js"></script>
+<script src="config.js?v=20261006"></script>
 <script>
 window.addEventListener('dragstart', e => e.preventDefault());
 const C = window.ICONS_CONFIG;
@@ -561,7 +561,11 @@ async function cargarSellers(){
     const resp = await fetch('seller.html?v=' + Date.now(), { cache:'no-store' });
     if (!resp.ok) return;
     capaSell.innerHTML = await resp.text();
-    capaSell.querySelectorAll('.sponsor-zone').forEach(sp => { if (!C.fitSeller(sp)) sp.remove(); });
+    /* si el navegador trae un config.js antiguo (caché) sin fitSeller, no se rompen los tooltips */
+    const fitSeller = C.fitSeller || (el => !!((el.dataset.name || '').trim() || (el.dataset.logo || '').trim()));
+    capaSell.querySelectorAll('.sponsor-zone').forEach(sp => {
+        try { if (!fitSeller(sp)) sp.remove(); } catch (err) { console.warn('seller', sp.dataset.name, err); }
+    });
     capaSell.querySelectorAll('.sponsor-zone').forEach(sp => {
         const name = sp.dataset.name || '', logo = sp.dataset.logo || '';
         const legacy = sp.dataset.dual === 'true';
