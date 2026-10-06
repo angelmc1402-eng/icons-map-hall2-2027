@@ -187,6 +187,9 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
         <label style="margin-top:7px">Web</label>
         <input type="text" id="p-web" oninput="live('web',this.value)">
         <label class="chk"><input type="checkbox" id="p-ghost" onchange="setGhost(this.checked)"> Invisible (el logo ya está en el plano)</label>
+        <button class="btn b-light b-xs" style="margin-top:7px" onclick="testUtm()">↗ Probar su web con UTM</button>
+        <label class="chk"><input type="checkbox" id="p-noutm" onchange="setNoUtm(this.checked)"> Sin UTM (su web se rompe con ellas)</label>
+        <div class="note" style="margin-top:3px">Al añadir un seller: pulsa «Probar». Si su web carga bien, nada que hacer. Si se ve rota o diferente a la normal, marca «Sin UTM». Sus clics se cuentan igual.</div>
         <div class="note" style="margin-top:3px">No pinta caja ni logo en el mapa público: solo la zona de hover y la ficha con IG y web.</div>
     </div>
 
@@ -262,7 +265,7 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
 
 <textarea id="clip"></textarea>
 
-<script src="config.js?v=20261006c"></script>
+<script src="config.js?v=20261006d"></script>
 <script>
 window.addEventListener('dragstart', e => e.preventDefault());
 const C = window.ICONS_CONFIG;
@@ -341,6 +344,7 @@ function makeZone(o){
     z.dataset.ig = o.ig || '';
     z.dataset.web = o.web || '';
     if (o.ghost) z.dataset.invisible = 'true';
+    if (o.noUtm) z.dataset.utm = 'off';
     z.dataset.logoLayout = o.layout || 'single';
     if (o.slot) z.dataset.slot = o.slot;
     if (o.r) z.dataset.r = o.r;
@@ -367,6 +371,7 @@ function select(z){
     document.getElementById('p-ig').value = z.dataset.ig || '';
     document.getElementById('p-web').value = z.dataset.web || '';
     document.getElementById('p-ghost').checked = z.dataset.invisible === 'true';
+    document.getElementById('p-noutm').checked = z.dataset.utm === 'off';
     document.getElementById('p-layout').value = z.dataset.logoLayout || 'single';
     const sb = z.dataset.slot ? C.standById(z.dataset.slot) : null;
     document.getElementById('p-slot').textContent = sb ? `${sb.id} · ${sb.group}` : 'Libre (no encajado en un stand)';
@@ -509,7 +514,7 @@ function pickIndex(i){
 /* undo */
 function serialize(){
     return zones().map(z => ({
-        name:z.dataset.name, logo:z.dataset.logo, ig:z.dataset.ig, web:z.dataset.web, ghost:z.dataset.invisible==='true',
+        name:z.dataset.name, logo:z.dataset.logo, ig:z.dataset.ig, web:z.dataset.web, ghost:z.dataset.invisible==='true', noUtm:z.dataset.utm==='off',
         layout:z.dataset.logoLayout||'single', slot:z.dataset.slot||'', r:z.dataset.r||'',
         l:pct(z.style.left), t:pct(z.style.top), w:pct(z.style.width), h:pct(z.style.height)
     }));
@@ -576,7 +581,7 @@ function parseInto(html, source){
     }
     snap(); capa.innerHTML=''; sel=null;
     found.forEach(el => capa.appendChild(makeZone({
-        name:el.dataset.name, logo:el.dataset.logo, ig:el.dataset.ig, web:el.dataset.web, ghost:el.dataset.invisible==='true',
+        name:el.dataset.name, logo:el.dataset.logo, ig:el.dataset.ig, web:el.dataset.web, ghost:el.dataset.invisible==='true', noUtm:el.dataset.utm==='off',
         layout: el.dataset.logoLayout || (el.dataset.dual==='true' ? 'dual-vertical' : 'single'),
         slot: el.dataset.slot || '', r: el.dataset.r || '',
         l:pct(el.style.left), t:pct(el.style.top), w:pct(el.style.width)||1, h:pct(el.style.height)||1
@@ -646,7 +651,7 @@ function dup(){
     if (!sel) return;
     snap();
     const z = makeZone({
-        name:sel.dataset.name, logo:sel.dataset.logo, ig:sel.dataset.ig, web:sel.dataset.web, ghost:sel.dataset.invisible==='true',
+        name:sel.dataset.name, logo:sel.dataset.logo, ig:sel.dataset.ig, web:sel.dataset.web, ghost:sel.dataset.invisible==='true', noUtm:sel.dataset.utm==='off',
         layout:sel.dataset.logoLayout, r:sel.dataset.r||'',
         l:pct(sel.style.left)+pct(sel.style.width)+0.15, t:pct(sel.style.top),
         w:pct(sel.style.width), h:pct(sel.style.height)
@@ -671,6 +676,22 @@ function live(field, value){
     if (field==='ig') sel.dataset.ig = value.trim();
     if (field==='web') sel.dataset.web = value.trim();
     render(sel); refreshList();
+}
+/* abre la web del seller tal como la abrirá el mapa (con UTM) para ver si se rompe */
+function testUtm(){
+    if (!sel) return;
+    const web = (sel.dataset.web || '').trim();
+    if (!web) return msg('Este seller no tiene web.','err');
+    const utm = (C.tracking && C.tracking.utm) || {};
+    let url = web;
+    try { const u = new URL(web); Object.keys(utm).forEach(k => u.searchParams.set(k, utm[k])); url = u.toString(); }
+    catch(e){ return msg('La web no es una URL válida (¿falta https://?).','err'); }
+    window.open(url, '_blank', 'noopener');
+}
+function setNoUtm(on){
+    if (!sel) return;
+    snap();
+    if (on) sel.dataset.utm = 'off'; else delete sel.dataset.utm;
 }
 function setGhost(on){
     if (!sel) return;
@@ -869,7 +890,8 @@ function exportLines(){
         const slot = z.dataset.slot ? ` data-slot="${esc(z.dataset.slot)}"` : '';
         const r = ` data-r="${esc(z.dataset.r || FREE_R)}"`;
         const ghost = z.dataset.invisible === 'true' ? ' data-invisible="true"' : '';
-        return `<div class="sponsor-zone" style="left: ${f4(pct(z.style.left))}%; top: ${f4(pct(z.style.top))}%; width: ${f4(pct(z.style.width))}%; height: ${f4(pct(z.style.height))}%;" data-name="${esc(z.dataset.name)}" data-logo="${esc(z.dataset.logo)}" data-ig="${esc(z.dataset.ig)}" data-web="${esc(z.dataset.web)}"${slot}${r}${ghost}${layout}></div>`;
+        const noUtm = z.dataset.utm === 'off' ? ' data-utm="off"' : '';
+        return `<div class="sponsor-zone" style="left: ${f4(pct(z.style.left))}%; top: ${f4(pct(z.style.top))}%; width: ${f4(pct(z.style.width))}%; height: ${f4(pct(z.style.height))}%;" data-name="${esc(z.dataset.name)}" data-logo="${esc(z.dataset.logo)}" data-ig="${esc(z.dataset.ig)}" data-web="${esc(z.dataset.web)}"${slot}${r}${ghost}${noUtm}${layout}></div>`;
     }).join('\n') + '\n';
 }
 function doExport(copyOnly){

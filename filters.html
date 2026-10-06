@@ -264,7 +264,7 @@ body.zoom-1 .sponsor-zone{pointer-events:none}
 <div class="tip" id="tip-mesa"></div>
 <div class="tip" id="tip-seller"></div>
 
-<script src="config.js?v=20261006c"></script>
+<script src="config.js?v=20261006d"></script>
 <script>
 window.addEventListener('dragstart', e => e.preventDefault());
 const C = window.ICONS_CONFIG;
@@ -560,7 +560,7 @@ function sellerTipHtml(sp){
         <div class="s-name">${name}</div>
         <div class="s-links">
             ${ig  ? `<a class="s-btn ig" data-track="instagram" href="${ig}" target="_blank" rel="noopener"><img draggable="false" src="${IG_ICON}" alt="" width="16" height="16"> Instagram</a>` : ''}
-            ${web ? `<a class="s-btn" data-track="web" href="${C.withUtm ? C.withUtm(web) : web}" target="_blank" rel="noopener">${WEB_ICON} Visit website</a>` : ''}
+            ${web ? `<a class="s-btn" data-track="web" href="${C.withUtm ? C.withUtm(web, sp.dataset.utm === 'off') : web}" target="_blank" rel="noopener">${WEB_ICON} Visit website</a>` : ''}
         </div>`;
 }
 function sellerTip(sp){

@@ -48,7 +48,10 @@ window.ICONS_CONFIG = {
        si un enlace ya trae sus propias utm_, se respeta. */
     tracking: {
         endpoint: 'https://script.google.com/macros/s/AKfycbyCYgCFn9OIzmw4MzK5EHW34pGYBkW3jRATBKQVbL_AQ3AlnWHuzEuSuQ8La1S0BeuE/exec',
-        utm: { utm_source: 'iconscollectibles', utm_medium: 'floor_map', utm_campaign: 'icons2027' }
+        utm: { utm_source: 'iconscollectibles', utm_medium: 'floor_map', utm_campaign: 'icons2027' },
+        /* webs a las que NO se les añaden UTM porque se rompen con parámetros en la URL.
+           También se puede desactivar por seller en el builder (casilla «Sin UTM»). */
+        noUtm: ['pcagrade.com']
     },
 
     /* size y border en px de pantalla · zoom = aumento sobre la vista completa
@@ -212,11 +215,17 @@ window.ICONS_CONFIG = {
     };
 
     /* añade las UTM de tracking.utm a una web (no a Instagram ni a enlaces que ya traen utm_) */
-    C.withUtm = function (url) {
+    C.withUtm = function (url, off) {
         const utm = C.tracking && C.tracking.utm;
-        if (!url || !utm || /instagram\.com/i.test(url) || /[?&]utm_/i.test(url)) return url;
+        if (off || !url || !utm || /instagram\.com/i.test(url) || /[?&]utm_/i.test(url)) return url;
         try {
             const u = new URL(url);
+            const host = u.hostname.replace(/^www\./, '');
+            const skip = (C.tracking.noUtm || []).some(function (d) {
+                d = String(d).replace(/^www\./, '');
+                return host === d || host.endsWith('.' + d);
+            });
+            if (skip) return url;
             Object.keys(utm).forEach(function (k) { u.searchParams.set(k, utm[k]); });
             return u.toString();
         } catch (e) { return url; }
