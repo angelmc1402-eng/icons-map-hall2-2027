@@ -56,6 +56,8 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
 .mesa.sold{cursor:default}
 /* en la vista completa manda la lupa, no las fichas */
 body.zoom-1 .mesa{pointer-events:none}
+/* ...y tampoco los sellers: en la vista general la lupa pasa por encima sin cortarse */
+body.zoom-1 .sponsor-zone{pointer-events:none}
 .mesa.dim{opacity:.22;filter:grayscale(1)}
 
 /* SELLERS */
@@ -136,10 +138,11 @@ body.zoom-1 .mesa{pointer-events:none}
     border:3px solid #fff;background:var(--bg);
     box-shadow:0 20px 45px -12px rgba(11,18,32,.5), 0 0 0 1px rgba(11,18,32,.08);
     overflow:hidden;pointer-events:none;z-index:11500;
-    opacity:0;transform:scale(.82);
-    transition:opacity .2s ease, transform .26s cubic-bezier(.2,.9,.3,1.3);
+    opacity:0;scale:.82;
+    transition:opacity .2s ease, scale .26s cubic-bezier(.2,.9,.3,1.3);
+    contain:strict;
 }
-#loupe.on{opacity:1;transform:scale(1)}
+#loupe.on{opacity:1;scale:1}
 #loupe::after{
     content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none;
     box-shadow:inset 0 0 26px rgba(11,18,32,.13);
@@ -347,6 +350,8 @@ function gutters(){
     const wide = window.innerWidth >= 1080;
     return { l: wide ? 312 : 0, r: wide ? 76 : 0, t: 0, b: wide ? 0 : 74 };
 }
+/* al arrancar la vista general también manda la lupa (antes la clase solo se ponía tras el primer zoom) */
+function LOUPE_ENABLED(){ return !C.loupe || C.loupe.enabled !== false; }
 function fit(animate){
     const iw = mapImg.naturalWidth || 7499, ih = mapImg.naturalHeight || 5675;
     const g = gutters();
@@ -357,7 +362,8 @@ function fit(animate){
     tx = g.l + (availW - iw * fitScale) / 2;
     ty = g.t + (availH - ih * fitScale) / 2;
     if (animate && baked) applyTransform(true);
-    else { clearTimeout(bakeT); bake(); zPct.textContent = '100%'; zRange.value = 0; }
+    else { clearTimeout(bakeT); bake(); zPct.textContent = '100%'; zRange.value = 0;
+           document.body.className = (LOUPE_ENABLED() ? 'zoom-1' : ''); }
 }
 
 zRange.addEventListener('input', () => setZoom(sliderToZoom(+zRange.value)));
@@ -576,7 +582,7 @@ async function cargarSellers(){
         const ghost = sp.dataset.invisible === 'true';
         sp.classList.toggle('ghost', ghost);
         sp.innerHTML = ghost ? `<div class="sponsor-logo-box" aria-label="${name}"></div>` : `<div class="${cls}">${
-            logo ? Array.from({length:counts[layout]}, () => `<img draggable="false" src="${logo}" alt="${name}">`).join('')
+            logo ? Array.from({length:counts[layout]}, () => `<img draggable="false" decoding="async" src="${logo}" alt="${name}">`).join('')
                  : `<span style="font-size:9px;font-weight:800;color:#334155">${name}</span>`}</div>`;
         sp.addEventListener('pointerenter', () => { clearTimeout(tipTimer); if (!dragging) sellerTip(sp); });
         sp.addEventListener('pointerleave', () => { tipTimer = setTimeout(() => tipSeller.classList.remove('show'), 260); });
@@ -605,22 +611,38 @@ function buildLoupe(){
     loupeInner.style.height = mapImg.naturalHeight + 'px';
     loupeReady = true;
 }
-function hideLoupe(){ loupe.classList.remove('on'); }
+let loupeIdle = 0;
+function scheduleLoupe(){
+    loupeReady = false;
+    if (!LOUPE.enabled || isTouch) return;
+    const idle = window.requestIdleCallback || (fn => setTimeout(fn, 200));
+    if (!loupeIdle) loupeIdle = idle(() => { loupeIdle = 0; if (!loupeReady) buildLoupe(); });
+}
+function hideLoupe(){
+    loupeEvt = null;
+    if (loupe.classList.contains('on')) loupe.classList.remove('on');
+}
+/* se pinta como mucho una vez por frame y solo con transform (sin left/top): no recalcula el layout */
+let loupeEvt = null, loupeRAF = 0;
 function moveLoupe(e){
+    loupeEvt = e;
+    if (!loupeRAF) loupeRAF = requestAnimationFrame(drawLoupe);
+}
+function drawLoupe(){
+    loupeRAF = 0;
+    const e = loupeEvt;
+    if (!e) return;
     if (!LOUPE.enabled || isTouch || e.pointerType === 'touch' || dragging || !LOUPE_ON()) return hideLoupe();
-    if (e.target.closest('.sponsor-zone') || e.target.closest('#tip-seller')) return hideLoupe();
+    if (e.target && e.target.closest && e.target.closest('#tip-seller')) return hideLoupe();
     const r = container.getBoundingClientRect();
     if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return hideLoupe();
     if (!loupeReady) buildLoupe();
     const z = fitScale * LOUPE.zoom;
     const px = (e.clientX - r.left) / r.width  * mapImg.naturalWidth;
     const py = (e.clientY - r.top)  / r.height * mapImg.naturalHeight;
-    loupeInner.style.transform = `scale(${z})`;
-    loupeInner.style.left = (LOUPE_C - px * z) + 'px';
-    loupeInner.style.top  = (LOUPE_C - py * z) + 'px';
-    loupe.style.left = (e.clientX - LOUPE.size/2) + 'px';
-    loupe.style.top  = (e.clientY - LOUPE.size/2) + 'px';
-    loupe.classList.add('on');
+    loupeInner.style.transform = `translate3d(${LOUPE_C - px * z}px,${LOUPE_C - py * z}px,0) scale(${z})`;
+    loupe.style.transform = `translate3d(${e.clientX - LOUPE.size/2}px,${e.clientY - LOUPE.size/2}px,0)`;
+    if (!loupe.classList.contains('on')) loupe.classList.add('on');
 }
 stage.addEventListener('pointermove', moveLoupe);
 stage.addEventListener('pointerleave', hideLoupe);
@@ -667,7 +689,7 @@ async function sincronizar(){
                 els.forEach(el => { if (!el.classList.contains('sold')){ el.classList.add('sold'); paint(el); } });
         });
     }catch(err){ console.warn('CSV sync:', err.message); }
-    loupeReady = false;
+    scheduleLoupe();
     updateLegend();
 }
 
@@ -749,7 +771,7 @@ async function boot(){
     fit(false);
     try { await cargarMesas(); } catch(e){ console.error('mesas.html:', e); }
     try { await cargarSellers(); } catch(e){ console.warn('seller.html:', e); }
-    loupeReady = false;
+    scheduleLoupe();
     updateLegend();
     sincronizar();
     setInterval(sincronizar, C.csvRefreshMs);

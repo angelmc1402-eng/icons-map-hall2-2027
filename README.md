@@ -178,3 +178,11 @@ del PNG, con su radio de esquina. Se sacaron con `detect-stands.py`; si cambia e
 - `config.js` se carga como `config.js?v=AAAAMMDD`: al cambiar config.js, sube también la fecha en los HTML (index, filters, builder, builder-sellers) para que nadie se quede con una versión en caché.
 - «Nuevo seller libre» tiene tamaños predefinidos (uno por cada medida de stand del plano) para logos fuera
   de los huecos.
+
+## Vista general y rendimiento
+
+- En la vista general (×1 en `index.html`, 100 % en `filters.html`) no hay fichas: ni de mesas ni de sellers. Manda la lupa,
+  que pasa por encima de los logos sin cortarse. Las fichas aparecen al hacer zoom.
+- La lupa se dibuja como mucho una vez por fotograma y solo con `transform` (sin `left/top`), y su copia del plano se
+  prepara en un momento libre al cargar, no en el primer movimiento del ratón.
+- Los logos se decodifican en segundo plano (`decoding="async"`).
