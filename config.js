@@ -42,6 +42,15 @@ window.ICONS_CONFIG = {
     soldColor: '#e11d48',
     soldLabel: 'SOLD OUT',
 
+    /* RECUENTO DE CLICS en las fichas de sponsors (web / Instagram).
+       endpoint = URL /exec del Apps Script de la hoja «ICONS 2027 · Clics sponsors».
+       Vacío = no se cuenta nada. Las UTM se añaden solas a las webs (no a Instagram);
+       si un enlace ya trae sus propias utm_, se respeta. */
+    tracking: {
+        endpoint: 'https://script.google.com/macros/s/AKfycbyCYgCFn9OIzmw4MzK5EHW34pGYBkW3jRATBKQVbL_AQ3AlnWHuzEuSuQ8La1S0BeuE/exec',
+        utm: { utm_source: 'iconscollectibles', utm_medium: 'floor_map', utm_campaign: 'icons2027' }
+    },
+
     /* size y border en px de pantalla · zoom = aumento sobre la vista completa
        enabled:false -> sin lupa, y en ×1 vuelven las fichas de mesa */
     loupe: { enabled: true, size: 280, zoom: 3, border: 3 },
@@ -201,6 +210,38 @@ window.ICONS_CONFIG = {
         if (css) el.style.borderRadius = css;
         return true;
     };
+
+    /* añade las UTM de tracking.utm a una web (no a Instagram ni a enlaces que ya traen utm_) */
+    C.withUtm = function (url) {
+        const utm = C.tracking && C.tracking.utm;
+        if (!url || !utm || /instagram\.com/i.test(url) || /[?&]utm_/i.test(url)) return url;
+        try {
+            const u = new URL(url);
+            Object.keys(utm).forEach(function (k) { u.searchParams.set(k, utm[k]); });
+            return u.toString();
+        } catch (e) { return url; }
+    };
+
+    /* cuenta un clic en la hoja (sin cookies ni identificadores: solo sponsor, tipo, pabellón y dispositivo) */
+    C.trackClick = (function () {
+        let last = '', lastT = 0;
+        return function (data) {
+            const ep = C.tracking && C.tracking.endpoint;
+            if (!ep) return;
+            const key = data.sponsor + '|' + data.type;
+            if (key === last && Date.now() - lastT < 3000) return;   /* doble clic = 1 */
+            last = key; lastT = Date.now();
+            const body = JSON.stringify(Object.assign({
+                hall: C.hallName,
+                device: window.matchMedia('(hover: none)').matches ? 'mobile' : 'desktop',
+                lang: (navigator.language || '').slice(0, 5)
+            }, data));
+            try {
+                if (navigator.sendBeacon && navigator.sendBeacon(ep, body)) return;
+            } catch (e) {}
+            try { fetch(ep, { method: 'POST', body: body, mode: 'no-cors', keepalive: true }); } catch (e) {}
+        };
+    })();
 
     /* "DIECAST-A-1" -> "DIECAST-A" */
     C.groupKey = function (id) {

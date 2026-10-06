@@ -222,7 +222,7 @@ body.lvl-0:not(.no-loupe) .sponsor-zone{pointer-events:none}
 <div class="tip" id="tip-mesa"></div>
 <div class="tip" id="tip-seller"></div>
 
-<script src="config.js?v=20261006"></script>
+<script src="config.js?v=20261006c"></script>
 <script>
 window.addEventListener('dragstart', e => e.preventDefault());
 const C = window.ICONS_CONFIG;
@@ -523,8 +523,8 @@ function sellerTipHtml(sp){
     return sp._tip = `
         <div class="s-name">${name}</div>
         <div class="s-links">
-            ${ig  ? `<a class="s-btn ig" href="${ig}" target="_blank" rel="noopener"><img draggable="false" src="${IG_ICON}" alt="" width="16" height="16"> Instagram</a>` : ''}
-            ${web ? `<a class="s-btn" href="${web}" target="_blank" rel="noopener">${WEB_ICON} Visit website</a>` : ''}
+            ${ig  ? `<a class="s-btn ig" data-track="instagram" href="${ig}" target="_blank" rel="noopener"><img draggable="false" src="${IG_ICON}" alt="" width="16" height="16"> Instagram</a>` : ''}
+            ${web ? `<a class="s-btn" data-track="web" href="${C.withUtm ? C.withUtm(web) : web}" target="_blank" rel="noopener">${WEB_ICON} Visit website</a>` : ''}
         </div>`;
 }
 function showSellerTip(sp){
@@ -568,6 +568,12 @@ async function cargarSellers(){
     });
     new Image().src = IG_ICON;
     capaSell.querySelectorAll('img').forEach(im => { if (im.decode) im.decode().catch(() => {}); });
+    /* recuento de clics: un solo listener para toda la ficha */
+    tipSeller.addEventListener('click', e => {
+        const a = e.target.closest('a[data-track]');
+        if (!a || !tipSeller._for || !C.trackClick) return;
+        C.trackClick({ sponsor: tipSeller._for.dataset.name || '', type: a.dataset.track, page: 'map' });
+    });
     tipSeller.addEventListener('pointerenter', () => clearTimeout(tipTimer));
     tipSeller.addEventListener('pointerleave', () => { if (!isTouch) tipSeller.classList.remove('show'); });
 }

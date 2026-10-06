@@ -190,3 +190,14 @@ del PNG, con su radio de esquina. Se sacaron con `detect-stands.py`; si cambia e
   La ficha se prepara una vez por seller y no se rehace si vuelves al mismo.
 - Logos alojados en `cdn.shopify.com`: el mapa pide automáticamente una versión reducida (`&width=…`, entre 200 y 1000 px
   según el tamaño del stand) en vez del original. Se pueden subir logos grandes sin que el mapa se resienta.
+
+## Recuento de clics en sponsors
+
+- Al pulsar «Instagram» o «Visit website» en la ficha de un sponsor, el mapa manda un aviso a una hoja de Google
+  (`config.js` → `tracking.endpoint`). Sin cookies ni datos personales: fecha, pabellón, sponsor, tipo, página
+  (`map` = index.html, `internal` = filters.html), dispositivo e idioma. Dos clics iguales en 3 s cuentan como uno.
+- Con `endpoint` vacío no se cuenta nada (el mapa funciona igual).
+- Las webs (no Instagram) llevan solas `?utm_source=iconscollectibles&utm_medium=floor_map&utm_campaign=icons2027`,
+  para que cada sponsor vea las visitas en su Analytics. Se cambian en `tracking.utm`. `seller.html` y el builder no cambian.
+- `tracking-apps-script.gs`: el código de la hoja (pestañas Clics, Resumen y Por día, todo con fórmulas automáticas).
+  Instrucciones dentro del fichero. El Resumen solo cuenta el mapa público, no la versión interna.
