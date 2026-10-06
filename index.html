@@ -60,15 +60,17 @@ body.no-loupe .mesa{pointer-events:auto}
 body.lvl-0:not(.no-loupe) .sponsor-zone{pointer-events:none}
 
 /* SELLERS */
-.sponsor-zone{position:absolute;pointer-events:auto;cursor:pointer;border-radius:7px}
-.sponsor-zone:hover{z-index:9000}
+.sponsor-zone{position:absolute;pointer-events:auto;cursor:pointer;border-radius:7px;contain:layout paint}
+/* anillo de hover en una capa propia: solo cambia su opacidad, el logo no se repinta */
+.sponsor-zone::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .12s ease;
+    box-shadow:inset 0 0 0 2.5px var(--seller),inset 0 0 0 6px rgba(124,58,237,.14)}
+.sponsor-zone:hover::after{opacity:1}
 /* el logo ocupa exactamente el marco del stand verde (misma caja, mismo redondeo);
    el hover se dibuja hacia dentro, así nunca se sale del marco */
-.sponsor-logo-box{width:100%;height:100%;box-sizing:border-box;background:#fff;border-radius:inherit;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:9%;box-shadow:inset 0 0 0 1.5px rgba(0,133,124,.9);transition:box-shadow .18s}
-.sponsor-zone:hover .sponsor-logo-box{box-shadow:inset 0 0 0 2.5px var(--seller),inset 0 0 0 6px rgba(124,58,237,.14)}
+.sponsor-logo-box{width:100%;height:100%;box-sizing:border-box;background:#fff;border-radius:inherit;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:9%;box-shadow:inset 0 0 0 1.5px rgba(0,133,124,.9)}
 /* invisible: el logo ya está impreso en el plano; solo hover + ficha */
 .sponsor-zone.ghost .sponsor-logo-box{background:transparent;box-shadow:none;padding:0}
-.sponsor-zone.ghost:hover .sponsor-logo-box{box-shadow:inset 0 0 0 2.5px var(--seller);background:rgba(124,58,237,.06)}
+.sponsor-zone.ghost::after{box-shadow:inset 0 0 0 2.5px var(--seller);background:rgba(124,58,237,.06)}
 .sponsor-logo-box img{width:100%;height:100%;object-fit:contain}
 .sponsor-logo-box.multi-logo{display:grid;gap:3px;align-items:stretch;justify-items:stretch}
 .sponsor-logo-box.multi-logo img{min-width:0;min-height:0}
@@ -515,15 +517,26 @@ async function cargarMesas(){
 const IG_ICON = 'https://cdn.shopify.com/s/files/1/0772/3633/9020/files/Instagram_icon_a7c6e898-1b4b-42cf-a525-04f05aea43a2.png?v=1778103647';
 const WEB_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 4 9 15 15 0 0 1-4 9 15 15 0 0 1-4-9 15 15 0 0 1 4-9z"/></svg>';
 
-function showSellerTip(sp){
+function sellerTipHtml(sp){
+    if (sp._tip) return sp._tip;
     const name = sp.dataset.name || '', ig = sp.dataset.ig || '', web = sp.dataset.web || '';
-    tipSeller.innerHTML = `
+    return sp._tip = `
         <div class="s-name">${name}</div>
         <div class="s-links">
-            ${ig  ? `<a class="s-btn ig" href="${ig}" target="_blank" rel="noopener"><img draggable="false" src="${IG_ICON}" alt=""> Instagram</a>` : ''}
+            ${ig  ? `<a class="s-btn ig" href="${ig}" target="_blank" rel="noopener"><img draggable="false" src="${IG_ICON}" alt="" width="16" height="16"> Instagram</a>` : ''}
             ${web ? `<a class="s-btn" href="${web}" target="_blank" rel="noopener">${WEB_ICON} Visit website</a>` : ''}
         </div>`;
+}
+function showSellerTip(sp){
+    if (tipSeller._for !== sp){ tipSeller.innerHTML = sellerTipHtml(sp); tipSeller._for = sp; }
     place(tipSeller, sp.getBoundingClientRect());
+}
+/* logos de Shopify: se pide una versión del tamaño que se va a ver como mucho (no el original de miles de px) */
+function logoSrc(url, sp){
+    if (!/^https:\/\/cdn\.shopify\.com\//.test(url) || /[?&]width=/.test(url)) return url;
+    const wpx = parseFloat(sp.style.width) / 100 * (mapImg.naturalWidth || 7500);
+    const w = Math.max(200, Math.min(1000, Math.ceil(wpx * 1.6 / 100) * 100));
+    return url + (url.includes('?') ? '&' : '?') + 'width=' + w;
 }
 async function cargarSellers(){
     const resp = await fetch('seller.html?v=' + Date.now(), { cache:'no-store' });
@@ -544,7 +557,7 @@ async function cargarSellers(){
         const ghost = sp.dataset.invisible === 'true';
         sp.classList.toggle('ghost', ghost);
         sp.innerHTML = ghost ? `<div class="sponsor-logo-box" aria-label="${name}"></div>` : `<div class="${cls}">${
-            logo ? Array.from({length:counts[layout]}, () => `<img draggable="false" decoding="async" src="${logo}" alt="${name}">`).join('')
+            logo ? Array.from({length:counts[layout]}, () => `<img draggable="false" decoding="async" src="${logoSrc(logo, sp)}" alt="${name}">`).join('')
                  : `<span style="font-size:9px;font-weight:800;color:#334155">${name}</span>`}</div>`;
         if (isTouch){
             sp.addEventListener('click', e => { e.stopPropagation(); showSellerTip(sp); });
@@ -553,6 +566,8 @@ async function cargarSellers(){
             sp.addEventListener('pointerleave', () => { tipTimer = setTimeout(() => tipSeller.classList.remove('show'), 260); });
         }
     });
+    new Image().src = IG_ICON;
+    capaSell.querySelectorAll('img').forEach(im => { if (im.decode) im.decode().catch(() => {}); });
     tipSeller.addEventListener('pointerenter', () => clearTimeout(tipTimer));
     tipSeller.addEventListener('pointerleave', () => { if (!isTouch) tipSeller.classList.remove('show'); });
 }

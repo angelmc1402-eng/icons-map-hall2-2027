@@ -186,3 +186,7 @@ del PNG, con su radio de esquina. Se sacaron con `detect-stands.py`; si cambia e
 - La lupa se dibuja como mucho una vez por fotograma y solo con `transform` (sin `left/top`), y su copia del plano se
   prepara en un momento libre al cargar, no en el primer movimiento del ratón.
 - Los logos se decodifican en segundo plano (`decoding="async"`).
+- Hover de sellers: el anillo morado va en una capa propia que solo cambia de opacidad, así el logo no se repinta.
+  La ficha se prepara una vez por seller y no se rehace si vuelves al mismo.
+- Logos alojados en `cdn.shopify.com`: el mapa pide automáticamente una versión reducida (`&width=…`, entre 200 y 1000 px
+  según el tamaño del stand) en vez del original. Se pueden subir logos grandes sin que el mapa se resienta.
