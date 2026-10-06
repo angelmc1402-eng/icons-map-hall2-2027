@@ -37,7 +37,7 @@ window.ICONS_CONFIG = {
     },
 
     /* active:false -> solo se muestra la tarifa. label = solo la leyenda de filters.html */
-    earlyBird: { active: true, discount: 0.15, label: 'EARLY BIRD −15%' },
+    earlyBird: { active: false, discount: 0.15, label: 'EARLY BIRD −15%' },
 
     soldColor: '#e11d48',
     soldLabel: 'SOLD OUT',
