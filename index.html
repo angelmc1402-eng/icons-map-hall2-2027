@@ -67,10 +67,11 @@ body.lvl-0:not(.no-loupe) .sponsor-zone{pointer-events:none}
 .sponsor-zone:hover::after{opacity:1}
 /* el logo ocupa exactamente el marco del stand verde (misma caja, mismo redondeo);
    el hover se dibuja hacia dentro, así nunca se sale del marco */
-.sponsor-logo-box{width:100%;height:100%;box-sizing:border-box;background:#fff;border-radius:inherit;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:9%;box-shadow:inset 0 0 0 1.5px rgba(0,133,124,.9)}
+.sponsor-logo-box{width:100%;height:100%;box-sizing:border-box;background:#fff;border-radius:inherit;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:9%}
 /* invisible: el logo ya está impreso en el plano; solo hover + ficha */
 .sponsor-zone.ghost .sponsor-logo-box{background:transparent;box-shadow:none;padding:0}
 .sponsor-zone.ghost::after{box-shadow:inset 0 0 0 2.5px var(--seller);background:rgba(124,58,237,.06)}
+.sponsor-zone.in-stand .sponsor-logo-box,.sponsor-zone[data-slot] .sponsor-logo-box{box-shadow:inset 0 0 0 1.5px rgba(0,133,124,.9)}
 .sponsor-logo-box img{width:100%;height:100%;object-fit:contain}
 .sponsor-logo-box.multi-logo{display:grid;gap:3px;align-items:stretch;justify-items:stretch}
 .sponsor-logo-box.multi-logo img{min-width:0;min-height:0}
@@ -223,7 +224,7 @@ body.lvl-0:not(.no-loupe) .sponsor-zone{pointer-events:none}
 <div class="tip" id="tip-mesa"></div>
 <div class="tip" id="tip-seller"></div>
 
-<script src="config.js?v=20261008"></script>
+<script src="config.js?v=20261009"></script>
 <script>
 window.addEventListener('dragstart', e => e.preventDefault());
 const C = window.ICONS_CONFIG;

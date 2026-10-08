@@ -331,7 +331,7 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
 <textarea id="clip"></textarea>
 <div id="placing"></div>
 
-<script src="config.js?v=20261008"></script>
+<script src="config.js?v=20261009"></script>
 <script src="seller-slots.js?v=20261008"></script>
 <script>
 window.addEventListener('dragstart', e => e.preventDefault());
@@ -1373,7 +1373,8 @@ function applyProposal(d){
             v._st = 'clash'; v._why = `${mine.join(', ')} ya tiene a «${z.dataset.name || 'otro seller'}».`; return;
         }
         runs.forEach(run => {
-            const z = makeZone({ name:v.name, logo:v.logo, ig:v.ig, web:v.web, vid:v.id, prop:true });
+            const wide = v.logoWide && run.length > 1 && !VERT(run[0].sd);
+            const z = makeZone({ name:v.name, logo: wide ? v.logoWide : v.logo, ig:v.ig, web:v.web, vid:v.id, prop:true });
             capa.appendChild(z); fitToTables(z, run);
             z.dataset.also = v.tables.concat(cornerMates(v.tables)).filter((t, i, a) => a.indexOf(t) === i && !run.some(o => o.t === t)).join(',');
             render(z);
@@ -1392,6 +1393,7 @@ const PV_SECTIONS = [
     ['clash',      'Su hueco ya lo ocupa otro seller',   'bad'],
     ['no-table',   'Sin mesa: colócalos a mano', 'warn'],
     ['no-slot',    'Sin hueco de logo',                  ''],
+    ['no-logo',    'Sin logo todavía (no se colocan)',   'warn'],
     ['collector',  'Collector (sin hueco de logo)',      ''],
     ['no-consent', 'No quieren salir en el mapa',        '']
 ];

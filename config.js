@@ -209,6 +209,7 @@ window.ICONS_CONFIG = {
             el.style.width = b.w + '%'; el.style.height = b.h + '%';
             w = b.w; h = b.h; r = b.r;
         }
+        el.classList.toggle('in-stand', !!b);   /* logo en un stand verde: lleva marco */
         const css = C.radiusCss(w, h, r);
         if (css) el.style.borderRadius = css;
         return true;
