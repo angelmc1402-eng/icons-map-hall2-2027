@@ -201,3 +201,32 @@ del PNG, con su radio de esquina. Se sacaron con `detect-stands.py`; si cambia e
   para que cada sponsor vea las visitas en su Analytics. Se cambian en `tracking.utm`. `seller.html` y el builder no cambian.
 - `tracking-apps-script.gs`: el código de la hoja (pestañas Clics, Resumen y Por día, todo con fórmulas automáticas).
   Instrucciones dentro del fichero. El Resumen solo cuenta el mapa público, no la versión interna.
+
+## Logos junto a las mesas commercial (Sellers Builder)
+
+- `seller-slots.js`: un hueco de logo por cada mesa **commercial**, pegado a su lado exterior de la isla
+  (izquierda, derecha, arriba o abajo). Todos del mismo tamaño (68 px en Hall 1, 70 px en Hall 2), sin tocar
+  mesas, otros huecos ni nada impreso en el plano. Lo genera `detect-seller-slots.py` (`python3 detect-seller-slots.py 2 70`);
+  si cambia `mesas.html` o el PNG, se regenera.
+- En el builder salen con línea morada discontinua y el número de mesa. **Clic** → seller de esa mesa.
+- **Extender** (panel derecho): suma la mesa siguiente de la misma fila, arriba/abajo en los laterales e
+  izquierda/derecha arriba y abajo de la isla. «Quitar» hace lo contrario. En esquinas, **«Otro lado de la esquina»**
+  pasa el logo del hueco de la mesa vertical al de la horizontal (o al revés).
+- **Colisiones**: un seller no puede quedar encima de una mesa ni de otro seller. Si al arrastrar o
+  redimensionar se monta, vuelve a su sitio; si alguno choca, sale con borde rojo. Soltarlo encima de un hueco
+  libre lo encaja solo.
+- **Logo comprimido**: «Subir imagen» o arrastrar la imagen encima del seller. Se reduce al tamaño máximo al que
+  se verá y se guarda en WebP dentro de `seller.html` (normalmente 3-15 KB). Los logos de Shopify se piden ya
+  reducidos con `&width=`.
+- `seller.html` guarda las mesas del vendedor: `data-tables` (las que tienen el logo al lado) y `data-also`
+  (el resto, p. ej. la otra mitad de la esquina). En el mapa público, al pasar por el logo se iluminan sus mesas
+  y la ficha de cada mesa dice «Exhibitor · nombre».
+
+## Propuesta de vendors
+
+- «📥 Cargar propuesta…» en el builder lee `propuesta-vendors-hall1.json` / `-hall2.json` (no van en el repo:
+  llevan datos de clientes y el repo es público).
+- Coloca cada vendedor commercial que dio permiso («Yes, include my store») en el hueco de su mesa, con borde
+  naranja hasta que se revisa («✓ Dar por buena»). El informe separa: colocados, mesa reclamada por otro pedido,
+  hueco ya ocupado, sin mesa (clic → clic en el hueco), collector y los que no quieren salir.
+- Los vendedores de la propuesta no se exportan hasta descargar `seller.html`, como el resto.

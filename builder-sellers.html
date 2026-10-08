@@ -50,6 +50,34 @@ body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:v
 .slot:hover{background:rgba(255,255,255,.7);border-color:#00857c;border-style:solid}
 .slot:hover span{opacity:1}
 .slot.taken{display:none}
+
+/* huecos de logo junto a cada mesa commercial (seller-slots.js) */
+#capa-tslots{position:absolute;inset:0;pointer-events:none}
+#capa-tslots.off{display:none}
+.tslot{position:absolute;box-sizing:border-box;pointer-events:auto;cursor:pointer;
+    border:3px dashed rgba(124,58,237,.55);border-radius:12px;background:rgba(255,255,255,.35);
+    display:flex;align-items:center;justify-content:center;transition:background .12s,border-color .12s}
+.tslot span{font-size:15px;font-weight:900;color:#6d28d9;opacity:.8;pointer-events:none;letter-spacing:-.02em}
+.tslot:hover{background:rgba(255,255,255,.92);border-style:solid;border-color:#7c3aed}
+.tslot.taken{display:none}
+body.placing .tslot{border-color:#f97316;background:rgba(255,237,213,.65)}
+body.placing .tslot.want{border:4px solid #f97316;background:#ffedd5}
+.zone.tz{box-shadow:inset 0 0 0 3px rgba(0,133,124,.85)}
+.zone.tz .inner{padding:8%}
+.zone.tz .ph{font-size:12px;padding:2px;line-height:1.05}
+.zone.prop{outline:4px dashed #f97316;outline-offset:3px}
+.zone.clash{outline:5px solid #ef4444;outline-offset:3px}
+#placing{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:21000;background:#f97316;color:#fff;font-weight:900;font-size:12px;padding:9px 18px;border-radius:999px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.4);font-family:'Inter',sans-serif}
+#placing.on{display:block}
+.pv-sum{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.pv-chip{font-size:10px;font-weight:900;padding:3px 7px;border-radius:999px;background:#e2e8f0;color:#334155}
+.pv-chip.ok{background:#dcfce7;color:#166534}.pv-chip.warn{background:#ffedd5;color:#9a3412}.pv-chip.bad{background:#fee2e2;color:#991b1b}
+.pv-sec{margin-top:8px}
+.pv-sec summary{font-size:10px;font-weight:900;color:var(--ink-2);cursor:pointer;text-transform:uppercase;letter-spacing:.05em}
+.pv-item{padding:6px 7px;border-bottom:1px solid #f1f5f9;font-size:11px;font-weight:800;color:var(--ink);cursor:pointer;background:#fff}
+.pv-item:hover{background:#f5f3ff}
+.pv-item small{display:block;font-weight:600;color:var(--ink-3);font-size:10px;margin-top:2px;line-height:1.35}
+.pv-list{max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:7px;margin-top:5px}
 .lay-dual-horizontal{grid-template-columns:repeat(2,minmax(0,1fr))}
 .lay-dual-vertical{grid-template-rows:repeat(2,minmax(0,1fr))}
 .lay-triple-vertical{grid-template-rows:repeat(3,minmax(0,1fr))}
@@ -134,6 +162,20 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
     </div>
 
     <div class="box">
+        <div class="box-title">Logos junto a mesas commercial <span id="tslot-count" class="val"></span></div>
+        <div class="note" style="margin-top:0">Cada mesa commercial tiene su hueco al lado, por fuera de la isla, todos del mismo tamaño y sin tocar nada. <b>Clic en uno</b> → seller de esa mesa. Si tiene más mesas seguidas, <b>Extender</b> en el panel derecho (arriba/abajo o izquierda/derecha).</div>
+        <button class="btn b-light" style="margin-top:8px" onclick="toggleTSlots()" id="btn-tslots">Ocultar huecos de mesa</button>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Propuesta de vendors <span id="pv-count" class="val"></span></div>
+        <input type="file" id="pv-file" accept=".json,application/json" style="display:none" onchange="loadProposalFile(this.files[0]); this.value=''">
+        <button class="btn b-purple" onclick="document.getElementById('pv-file').click()">📥 Cargar propuesta…</button>
+        <div class="note">Carga <b>propuesta-vendors-hall<span class="hallnum"></span>.json</b>: coloca cada vendedor commercial en el hueco de su mesa (borde naranja = sin revisar) y lista lo que falta. Clic en un pendiente → clic en el hueco de su mesa.</div>
+        <div id="pv-report"></div>
+    </div>
+
+    <div class="box">
         <div class="box-title">Nuevo seller libre</div>
         <label>Tamaño predefinido</label>
         <select id="n-preset" onchange="applyPreset()"></select>
@@ -176,12 +218,34 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
         </div>
     </div>
 
+    <div class="box" id="p-tables-box" style="display:none">
+        <div class="box-title">Mesas del vendedor</div>
+        <div id="p-tables" style="font-size:12px;font-weight:800;color:var(--ink)">—</div>
+        <div class="g2" style="margin-top:7px">
+            <button class="btn b-light b-xs" id="ext-a" onclick="extend(-1)">⬆ Extender</button>
+            <button class="btn b-light b-xs" id="ext-b" onclick="extend(1)">⬇ Extender</button>
+        </div>
+        <div class="g2" style="margin-top:6px">
+            <button class="btn b-light b-xs" id="shr-a" onclick="shrink(-1)">Quitar ⬆</button>
+            <button class="btn b-light b-xs" id="shr-b" onclick="shrink(1)">Quitar ⬇</button>
+        </div>
+        <button class="btn b-light b-xs" style="margin-top:6px" id="flip-side" onclick="flipCorner()">↻ Otro lado de la esquina</button>
+        <button class="btn b-green b-xs" style="margin-top:6px;display:none" id="p-ok" onclick="confirmProp()">✓ Dar por buena (quitar borde naranja)</button>
+        <div class="note" id="p-tables-note"></div>
+    </div>
+
     <div class="box">
         <div class="box-title">Ficha</div>
         <label>Nombre</label>
         <input type="text" id="p-name" oninput="live('name',this.value)">
-        <label style="margin-top:7px">Logo (URL)</label>
-        <input type="text" id="p-logo" oninput="live('logo',this.value)">
+        <label style="margin-top:7px">Logo (URL o imagen)</label>
+        <input type="text" id="p-logo" oninput="live('logo',this.value)" placeholder="https://… o sube / arrastra una imagen">
+        <input type="file" id="p-logo-file" accept="image/*" style="display:none" onchange="logoFromFile(this.files[0]); this.value=''">
+        <div class="g2" style="margin-top:5px">
+            <button class="btn b-light b-xs" onclick="document.getElementById('p-logo-file').click()">🖼 Subir imagen</button>
+            <button class="btn b-light b-xs" onclick="clearLogo()">Quitar logo</button>
+        </div>
+        <div class="note" id="p-logo-info" style="margin-top:4px">También puedes arrastrar la imagen encima del seller. Se reduce al tamaño que se verá y se guarda comprimida (WebP).</div>
         <label style="margin-top:7px">Instagram</label>
         <input type="text" id="p-ig" oninput="live('ig',this.value)">
         <label style="margin-top:7px">Web</label>
@@ -258,14 +322,17 @@ textarea{min-height:80px;font-family:monospace;font-size:11px;resize:vertical}
         <img draggable="false" id="map-img" alt="Plano">
         <div id="capa-mesas-ref" style="position:absolute;inset:0;pointer-events:none;display:none"></div>
         <div id="capa-slots"></div>
+        <div id="capa-tslots"></div>
         <div id="capa"></div>
         <div class="handle" id="handle"></div>
     </div>
 </div>
 
 <textarea id="clip"></textarea>
+<div id="placing"></div>
 
-<script src="config.js?v=20261006d"></script>
+<script src="config.js?v=20261008"></script>
+<script src="seller-slots.js?v=20261008"></script>
 <script>
 window.addEventListener('dragstart', e => e.preventDefault());
 const C = window.ICONS_CONFIG;
@@ -283,6 +350,30 @@ const STANDS = ((C.stands && C.stands.list) || []).map(C.standBox);
 const FREE_R = (C.stands && C.stands.freeRadius) || 14;
 const props = document.getElementById('props');
 const handle = document.getElementById('handle');
+const capaTS = document.getElementById('capa-tslots');
+
+/* ---- huecos de logo por mesa commercial (seller-slots.js) ---- */
+const SS = window.ICONS_SELLER_SLOTS || { imageW:1, imageH:1, radius:12, list:[] };
+const TS = SS.list.map(o => Object.assign({}, o, {
+    l: o.x / SS.imageW * 100, tp: o.y / SS.imageH * 100,
+    wp: o.s / SS.imageW * 100, hp: o.s / SS.imageH * 100
+}));
+const TS_BY = new Map(TS.map(o => [o.t, o]));
+const TS_LINES = new Map();
+TS.forEach(o => { const k = o.g + '|' + o.sd; if (!TS_LINES.has(k)) TS_LINES.set(k, []); TS_LINES.get(k).push(o); });
+TS_LINES.forEach(a => a.sort((p, q) => (p.sd === 'L' || p.sd === 'R') ? p.y - q.y : p.x - q.x));
+TS.forEach(o => { o.line = TS_LINES.get(o.g + '|' + o.sd); o.idx = o.line.indexOf(o); });
+const VERT = sd => sd === 'L' || sd === 'R';
+/* hueco contiguo en la misma fila de mesas (no salta el hueco central de la isla) */
+function tsNeighbor(o, dir){
+    const n = o.line[o.idx + dir];
+    if (!n) return null;
+    const gap = VERT(o.sd) ? Math.abs(n.y - o.y) : Math.abs(n.x - o.x);
+    return gap <= o.s * 1.75 ? n : null;
+}
+let mesasRects = [];          /* mesas en % para las colisiones */
+let placing = null;           /* vendedor de la propuesta que se está colocando a mano */
+let PROP = null;              /* propuesta cargada */
 
 mapImg.src = C.mapImage;
 document.getElementById('hall-tag').textContent = C.hallLabel;
@@ -293,7 +384,8 @@ window.addEventListener('load', () => {
 });
 function init(){
     fitView();
-    buildSlots(); buildPresets();
+    buildSlots(); buildTSlots(); buildPresets();
+    document.querySelectorAll('.hallnum').forEach(e => e.textContent = (C.hallName.match(/\d+/) || [''])[0]);
     viewport.addEventListener('wheel', onWheel, {passive:false});
     loadFromFile();
     loadMesasRef();
@@ -325,14 +417,16 @@ function render(z){
     const logo = z.dataset.logo || '';
     const name = z.dataset.name || '';
     const cls = layout === 'single' ? 'inner' : `inner multi lay-${layout}`;
-    z.classList.toggle('free', !z.dataset.slot);
+    z.classList.toggle('free', !z.dataset.slot && !z.dataset.tables);
+    z.classList.toggle('tz', !!z.dataset.tables);
+    z.classList.toggle('prop', z.dataset.prop === '1');
     z.classList.toggle('empty', isEmpty(z));
     const ghost = z.dataset.invisible === 'true';
     z.classList.toggle('ghost', ghost);
     if (ghost){ applyRadius(z); z.innerHTML = `<div class="inner"><span class="ph">👻 ${esc(name || 'Añade nombre')}</span></div>`; return; }
     applyRadius(z);
     z.innerHTML = logo
-        ? `<div class="${cls}">${Array.from({length:n},()=>`<img draggable="false" src="${esc(logo)}" alt="">`).join('')}</div>`
+        ? `<div class="${cls}">${Array.from({length:n},()=>`<img draggable="false" src="${esc(previewSrc(logo))}" alt="">`).join('')}</div>`
         : `<div class="inner"><span class="ph">${esc(name || 'Añade nombre')}</span></div>`;
 }
 
@@ -348,6 +442,10 @@ function makeZone(o){
     z.dataset.logoLayout = o.layout || 'single';
     if (o.slot) z.dataset.slot = o.slot;
     if (o.r) z.dataset.r = o.r;
+    if (o.tables) z.dataset.tables = o.tables;
+    if (o.also) z.dataset.also = o.also;
+    if (o.vid) z.dataset.vid = o.vid;
+    if (o.prop) z.dataset.prop = '1';
     z.style.left = f4(o.l)+'%'; z.style.top = f4(o.t)+'%';
     z.style.width = f4(o.w)+'%'; z.style.height = f4(o.h)+'%';
     render(z);
@@ -367,14 +465,16 @@ function select(z){
     props.classList.add('on');
     document.getElementById('sel-title').textContent = z.dataset.name || 'Seller nuevo';
     document.getElementById('p-name').value = z.dataset.name || '';
-    document.getElementById('p-logo').value = z.dataset.logo || '';
+    showLogoField(z);
     document.getElementById('p-ig').value = z.dataset.ig || '';
     document.getElementById('p-web').value = z.dataset.web || '';
     document.getElementById('p-ghost').checked = z.dataset.invisible === 'true';
     document.getElementById('p-noutm').checked = z.dataset.utm === 'off';
     document.getElementById('p-layout').value = z.dataset.logoLayout || 'single';
     const sb = z.dataset.slot ? C.standById(z.dataset.slot) : null;
-    document.getElementById('p-slot').textContent = sb ? `${sb.id} · ${sb.group}` : 'Libre (no encajado en un stand)';
+    document.getElementById('p-slot').textContent = sb ? `${sb.id} · ${sb.group}`
+        : (z.dataset.tables ? 'Junto a mesa (ver «Mesas del vendedor»)' : 'Libre (no encajado en un stand)');
+    syncTables();
     syncSize(); syncPos(); drawHandle(); refreshList();
 }
 function deselect(){ select(null); }
@@ -410,9 +510,10 @@ function refreshList(){
     box.innerHTML = all.map((z,i) =>
         `<div class="list-item ${z===sel?'on':''}" onclick="pickIndex(${i})">
             <span>${z.dataset.invisible==='true'?'👻 ':''}${esc(z.dataset.name || (z.dataset.logo ? '(sin nombre)' : '⚠ sin datos'))}</span>
-            <span>${z.dataset.slot || (pct(z.style.left).toFixed(1)+','+pct(z.style.top).toFixed(1))}</span>
+            <span>${z.dataset.slot || (z.dataset.tables ? tablesLabel(z.dataset.tables) : (pct(z.style.left).toFixed(1)+','+pct(z.style.top).toFixed(1)))}</span>
          </div>`).join('') || '<div class="list-item">Sin sellers</div>';
-    updateSlots();
+    updateSlots(); updateTSlots(); markClashes();
+    if (PROP) renderReport();
 }
 
 /* huecos verdes */
@@ -516,6 +617,7 @@ function serialize(){
     return zones().map(z => ({
         name:z.dataset.name, logo:z.dataset.logo, ig:z.dataset.ig, web:z.dataset.web, ghost:z.dataset.invisible==='true', noUtm:z.dataset.utm==='off',
         layout:z.dataset.logoLayout||'single', slot:z.dataset.slot||'', r:z.dataset.r||'',
+        tables:z.dataset.tables||'', also:z.dataset.also||'', vid:z.dataset.vid||'', prop:z.dataset.prop==='1',
         l:pct(z.style.left), t:pct(z.style.top), w:pct(z.style.width), h:pct(z.style.height)
     }));
 }
@@ -584,11 +686,15 @@ function parseInto(html, source){
         name:el.dataset.name, logo:el.dataset.logo, ig:el.dataset.ig, web:el.dataset.web, ghost:el.dataset.invisible==='true', noUtm:el.dataset.utm==='off',
         layout: el.dataset.logoLayout || (el.dataset.dual==='true' ? 'dual-vertical' : 'single'),
         slot: el.dataset.slot || '', r: el.dataset.r || '',
+        tables: el.dataset.tables || '', also: el.dataset.also || '',
         l:pct(el.style.left), t:pct(el.style.top), w:pct(el.style.width)||1, h:pct(el.style.height)||1
     })));
+    /* los de mesa se recolocan exactos sobre sus huecos (por si se regeneró seller-slots.js) */
+    zones().forEach(z => { if (z.dataset.tables){ const sl = slotsOf(z); if (sl.length) fitToTables(z, sl); render(z); } });
     /* los que caen en un stand verde y no estaban encajados, se encajan */
     let fixed = 0;
     zones().forEach(z => {
+        if (z.dataset.tables) return;
         if (z.dataset.slot){ const b = C.standById(z.dataset.slot); if (b){ fitToStand(z,b); render(z); } return; }
         const b = C.standAt(pct(z.style.left)+pct(z.style.width)/2, pct(z.style.top)+pct(z.style.height)/2);
         if (!b || zones().some(o => o.dataset.slot === b.id)) return;
@@ -619,6 +725,11 @@ async function loadMesasRef(){
             m.style.background = C.rgba(hex,.30);
             m.style.borderRadius='2px';
         });
+        const ms = capaRef.querySelectorAll('.mesa');
+        mesasRects = Array.from(ms).map(m => ({ id: m.dataset.info || '',
+            r: { l:pct(m.style.left), t:pct(m.style.top), w:pct(m.style.width), h:pct(m.style.height) } }));
+        try { C.corner.build(ms); } catch(e){}
+        markClashes();
     }catch(e){}
 }
 function showMesasToggle(){
@@ -672,7 +783,7 @@ function live(field, value){
     clearTimeout(liveT);
     liveT = setTimeout(snap, 700);
     if (field==='name'){ sel.dataset.name = value; document.getElementById('sel-title').textContent = value || 'Seller sin nombre'; }
-    if (field==='logo') sel.dataset.logo = value.trim();
+    if (field==='logo'){ sel.dataset.logo = value.trim(); showLogoInfo(sel); }
     if (field==='ig') sel.dataset.ig = value.trim();
     if (field==='web') sel.dataset.web = value.trim();
     render(sel); refreshList();
@@ -758,7 +869,11 @@ function applyXY(){
 }
 function nudge(dx,dy){
     if (!sel) return;
+    const r = rectOf(sel); r.l += dx; r.t += dy;
+    const hits = collisions(sel, r);
+    if (hits.length) return msg('Choca con ' + hits.slice(0,2).join(', ') + '.','err');
     snap();
+    if (sel.dataset.tables){ delete sel.dataset.tables; delete sel.dataset.also; render(sel); }
     sel.style.left = f4(pct(sel.style.left)+dx)+'%';
     sel.style.top = f4(pct(sel.style.top)+dy)+'%';
     syncPos(); drawHandle(); refreshList();
@@ -772,7 +887,7 @@ function mouseToPct(e){
 let moving = null;
 function startMove(e){
     snap();
-    moving = {start:mouseToPct(e), l:pct(sel.style.left), t:pct(sel.style.top)};
+    moving = {start:mouseToPct(e), l:pct(sel.style.left), t:pct(sel.style.top), tables: sel.dataset.tables || ''};
 }
 document.addEventListener('mousemove', e => {
     if (!moving || !sel) return;
@@ -783,8 +898,21 @@ document.addEventListener('mousemove', e => {
 });
 document.addEventListener('mouseup', () => {
     if (!moving) return;
-    moving = null;
-    if (sel){ magnet(sel); select(sel); }
+    const m = moving; moving = null;
+    if (sel){
+        const moved = Math.abs(pct(sel.style.left) - m.l) + Math.abs(pct(sel.style.top) - m.t) > 0.0005;
+        if (moved){
+            if (!magnetTable(sel)) magnet(sel);
+            const hits = collisions(sel, rectOf(sel));
+            if (hits.length){
+                sel.style.left = f4(m.l)+'%'; sel.style.top = f4(m.t)+'%';
+                if (m.tables){ sel.dataset.tables = m.tables; const sl = slotsOf(sel); if (sl.length) fitToTables(sel, sl); }
+                render(sel);
+                msg('No cabe ahí: choca con ' + hits.slice(0,3).join(', ') + '. Vuelve a su sitio.','err');
+            }
+        }
+        select(sel);
+    }
     refreshList();
 });
 
@@ -792,15 +920,23 @@ handle.addEventListener('mousedown', e => {
     if (!sel) return;
     e.preventDefault(); e.stopPropagation();
     snap();
-    const l = pct(sel.style.left), t = pct(sel.style.top);
+    const l = pct(sel.style.left), t = pct(sel.style.top), w0 = pct(sel.style.width), h0 = pct(sel.style.height);
     const move = ev => {
         const n = mouseToPct(ev);
         sel.style.width = f4(Math.max(.1, n.x - l))+'%';
         sel.style.height = f4(Math.max(.1, n.y - t))+'%';
         if (sel.dataset.slot){ delete sel.dataset.slot; sel.classList.add('free'); }
+        if (sel.dataset.tables){ delete sel.dataset.tables; delete sel.dataset.also; sel.classList.remove('tz'); }
         applyRadius(sel); syncSize(); drawHandle();
     };
-    const up = () => { document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); };
+    const up = () => {
+        document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up);
+        const hits = collisions(sel, rectOf(sel));
+        if (hits.length){
+            undo();
+            msg('Ese tamaño choca con ' + hits.slice(0,3).join(', ') + '. Deshecho.','err');
+        }
+    };
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
 });
@@ -869,7 +1005,7 @@ document.addEventListener('keydown', e => {
     if (mod && e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); return; }
     if (mod && e.key.toLowerCase()==='d'){ e.preventDefault(); dup(); return; }
     if (e.key === '0'){ fitView(); return; }
-    if (e.key === 'Escape'){ deselect(); return; }
+    if (e.key === 'Escape'){ if (placing){ stopPlacing(); return; } deselect(); return; }
     if (!sel) return;
     if (e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); del(); return; }
     if (e.key.startsWith('Arrow')){
@@ -891,7 +1027,9 @@ function exportLines(){
         const r = ` data-r="${esc(z.dataset.r || FREE_R)}"`;
         const ghost = z.dataset.invisible === 'true' ? ' data-invisible="true"' : '';
         const noUtm = z.dataset.utm === 'off' ? ' data-utm="off"' : '';
-        return `<div class="sponsor-zone" style="left: ${f4(pct(z.style.left))}%; top: ${f4(pct(z.style.top))}%; width: ${f4(pct(z.style.width))}%; height: ${f4(pct(z.style.height))}%;" data-name="${esc(z.dataset.name)}" data-logo="${esc(z.dataset.logo)}" data-ig="${esc(z.dataset.ig)}" data-web="${esc(z.dataset.web)}"${slot}${r}${ghost}${noUtm}${layout}></div>`;
+        const tabs = z.dataset.tables ? ` data-tables="${esc(z.dataset.tables)}"` : '';
+        const also = z.dataset.also ? ` data-also="${esc(z.dataset.also)}"` : '';
+        return `<div class="sponsor-zone" style="left: ${f4(pct(z.style.left))}%; top: ${f4(pct(z.style.top))}%; width: ${f4(pct(z.style.width))}%; height: ${f4(pct(z.style.height))}%;" data-name="${esc(z.dataset.name)}" data-logo="${esc(z.dataset.logo)}" data-ig="${esc(z.dataset.ig)}" data-web="${esc(z.dataset.web)}"${slot}${tabs}${also}${r}${ghost}${noUtm}${layout}></div>`;
     }).join('\n') + '\n';
 }
 function doExport(copyOnly){
@@ -914,6 +1052,395 @@ function doExport(copyOnly){
     URL.revokeObjectURL(url);
     alert(`Descargado seller.html con ${all.length} sellers.`);
 }
+
+/* ================= HUECOS DE LOGO POR MESA ================= */
+let tslotsOn = true;
+function tablesLabel(list){
+    return String(list || '').split(',').filter(Boolean).map(t => t.split('-').slice(1).join('')).join(' · ');
+}
+function buildTSlots(){
+    capaTS.innerHTML = '';
+    TS.forEach(o => {
+        const d = document.createElement('div');
+        d.className = 'tslot'; d.dataset.t = o.t;
+        d.style.left = f4(o.l)+'%'; d.style.top = f4(o.tp)+'%';
+        d.style.width = f4(o.wp)+'%'; d.style.height = f4(o.hp)+'%';
+        d.title = o.t;
+        d.innerHTML = `<span>${esc(o.t.split('-').slice(1).join(''))}</span>`;
+        d.addEventListener('click', () => { if (!panMoved) clickTSlot(o); });
+        capaTS.appendChild(d);
+    });
+    updateTSlots();
+}
+function takenTables(except){
+    const m = new Map();
+    zones().forEach(z => { if (z === except) return; (z.dataset.tables || '').split(',').filter(Boolean).forEach(t => m.set(t, z)); });
+    return m;
+}
+function updateTSlots(){
+    const taken = takenTables();
+    const want = new Set(placing ? placing.tables : []);
+    capaTS.querySelectorAll('.tslot').forEach(d => {
+        d.classList.toggle('taken', taken.has(d.dataset.t));
+        d.classList.toggle('want', want.has(d.dataset.t));
+    });
+    const el = document.getElementById('tslot-count');
+    if (el) el.textContent = `${TS.length - taken.size} libres / ${TS.length}`;
+}
+function toggleTSlots(){
+    tslotsOn = !tslotsOn;
+    capaTS.classList.toggle('off', !tslotsOn);
+    document.getElementById('btn-tslots').textContent = tslotsOn ? 'Ocultar huecos de mesa' : 'Ver huecos de mesa';
+}
+function slotsOf(z){
+    return String(z.dataset.tables || '').split(',').map(t => TS_BY.get(t)).filter(Boolean);
+}
+/* encaja el seller sobre uno o varios huecos seguidos de la misma fila */
+function fitToTables(z, list){
+    list = list.slice().sort((a, b) => a.idx - b.idx);
+    const x0 = Math.min(...list.map(o => o.x)), y0 = Math.min(...list.map(o => o.y));
+    const x1 = Math.max(...list.map(o => o.x + o.s)), y1 = Math.max(...list.map(o => o.y + o.s));
+    z.dataset.tables = list.map(o => o.t).join(',');
+    z.dataset.r = SS.radius || 12;
+    delete z.dataset.slot;
+    z.style.left = f4(x0 / SS.imageW * 100)+'%'; z.style.top = f4(y0 / SS.imageH * 100)+'%';
+    z.style.width = f4((x1 - x0) / SS.imageW * 100)+'%'; z.style.height = f4((y1 - y0) / SS.imageH * 100)+'%';
+}
+function cornerMates(ids){
+    const out = new Set();
+    ids.forEach(id => { try { ((C.corner.group ? C.corner.group(id) : [id, C.corner.partner(id)].filter(Boolean)) || []).forEach(x => { if (x !== id) out.add(x); }); } catch(e){} });
+    return Array.from(out);
+}
+function clickTSlot(o){
+    const taken = takenTables();
+    if (taken.has(o.t)) return;
+    snap();
+    if (placing){
+        const v = placing;
+        const run = bestRun(v.tables.includes(o.t) ? v.tables : [o.t], o);
+        const z = makeZone({ name:v.name, logo:v.logo, ig:v.ig, web:v.web, vid:v.id, prop:true });
+        capa.appendChild(z); fitToTables(z, run);
+        z.dataset.also = v.tables.concat(cornerMates(v.tables)).filter(t => !run.some(r => r.t === t))
+            .filter((t, i, a) => a.indexOf(t) === i).join(',');
+        render(z); stopPlacing(); select(z);
+        msg(`${v.name} colocado en ${tablesLabel(z.dataset.tables)}.`,'ok');
+        return;
+    }
+    const z = makeZone({});
+    capa.appendChild(z); fitToTables(z, [o]);
+    z.dataset.also = cornerMates([o.t]).join(',');
+    render(z); select(z);
+    document.getElementById('p-name').focus();
+    msg(`Hueco de ${o.t}: pon nombre y logo. Si tiene más mesas, «Extender».`,'ok');
+}
+/* tramo de huecos seguidos (misma fila) que mejor cubre las mesas del vendedor */
+function runsOf(ids){
+    const set = new Set(ids), seen = new Set(), runs = [];
+    ids.map(t => TS_BY.get(t)).filter(Boolean).forEach(o => {
+        if (seen.has(o.t)) return;
+        let a = o; while (true){ const p = tsNeighbor(a, -1); if (p && set.has(p.t)) a = p; else break; }
+        const run = [a]; seen.add(a.t);
+        let b = a; while (true){ const n = tsNeighbor(b, 1); if (n && set.has(n.t)){ run.push(n); seen.add(n.t); b = n; } else break; }
+        runs.push(run);
+    });
+    return runs;
+}
+function bestRun(ids, prefer){
+    const runs = runsOf(ids);
+    if (prefer){ const r = runs.find(r => r.includes(prefer)); if (r) return r; }
+    runs.sort((a, b) => b.length - a.length || (VERT(b[0].sd) - VERT(a[0].sd)));
+    return runs[0] || (prefer ? [prefer] : []);
+}
+/* al soltar un seller sobre un hueco de mesa libre, se encaja */
+function magnetTable(z){
+    const cx = pct(z.style.left) + pct(z.style.width)/2, cy = pct(z.style.top) + pct(z.style.height)/2;
+    const o = TS.find(o => cx >= o.l && cx <= o.l + o.wp && cy >= o.tp && cy <= o.tp + o.hp);
+    if (!o){
+        if (z.dataset.tables){ delete z.dataset.tables; delete z.dataset.also; render(z); }
+        return false;
+    }
+    if (takenTables(z).has(o.t)) return false;
+    const n = slotsOf(z).length || 1;
+    let run = [o];
+    /* si ya ocupaba varias mesas, intenta conservar el mismo número de huecos */
+    for (let i = 1; i < n; i++){
+        const nx = tsNeighbor(run[run.length-1], 1);
+        if (!nx || takenTables(z).has(nx.t)) break;
+        run.push(nx);
+    }
+    fitToTables(z, run);
+    z.dataset.also = cornerMates(run.map(r => r.t)).filter(t => !run.some(r => r.t === t)).join(',');
+    render(z);
+    return true;
+}
+function syncTables(){
+    const box = document.getElementById('p-tables-box');
+    const z = sel;
+    if (!z || !z.dataset.tables){ box.style.display = 'none'; return; }
+    box.style.display = '';
+    const sl = slotsOf(z).sort((a, b) => a.idx - b.idx);
+    const v = sl.length && VERT(sl[0].sd);
+    document.getElementById('ext-a').textContent = v ? '⬆ Extender arriba' : '⬅ Extender izquierda';
+    document.getElementById('ext-b').textContent = v ? '⬇ Extender abajo' : '➡ Extender derecha';
+    document.getElementById('shr-a').textContent = v ? 'Quitar la de arriba' : 'Quitar la de la izquierda';
+    document.getElementById('shr-b').textContent = v ? 'Quitar la de abajo' : 'Quitar la de la derecha';
+    const taken = takenTables(z);
+    const a = sl.length && tsNeighbor(sl[0], -1), b = sl.length && tsNeighbor(sl[sl.length-1], 1);
+    document.getElementById('ext-a').disabled = !a || taken.has(a.t);
+    document.getElementById('ext-b').disabled = !b || taken.has(b.t);
+    document.getElementById('shr-a').disabled = document.getElementById('shr-b').disabled = sl.length < 2;
+    document.getElementById('flip-side').style.display = flipTarget(z) ? '' : 'none';
+    document.getElementById('p-ok').style.display = z.dataset.prop === '1' ? '' : 'none';
+    const also = String(z.dataset.also || '').split(',').filter(Boolean);
+    document.getElementById('p-tables').textContent = sl.map(o => o.t).join(' · ');
+    document.getElementById('p-tables-note').textContent = also.length ? 'También suyas (sin logo propio): ' + also.join(' · ') : '';
+}
+function extend(dir){
+    if (!sel || !sel.dataset.tables) return;
+    const sl = slotsOf(sel).sort((a, b) => a.idx - b.idx);
+    const end = dir < 0 ? sl[0] : sl[sl.length-1];
+    const n = tsNeighbor(end, dir);
+    if (!n) return msg('No hay más mesas seguidas por ese lado en esta fila.','err');
+    const owner = takenTables(sel).get(n.t);
+    if (owner) return msg(`${n.t} ya es de «${owner.dataset.name || 'otro seller'}».`,'err');
+    snap();
+    fitToTables(sel, sl.concat([n]));
+    sel.dataset.also = String(sel.dataset.also || '').split(',').filter(t => t && t !== n.t).join(',');
+    render(sel); select(sel); refreshList();
+}
+function shrink(dir){
+    if (!sel || !sel.dataset.tables) return;
+    const sl = slotsOf(sel).sort((a, b) => a.idx - b.idx);
+    if (sl.length < 2) return;
+    snap();
+    const out = dir < 0 ? sl.shift() : sl.pop();
+    fitToTables(sel, sl);
+    render(sel); select(sel); refreshList();
+    msg(`${out.t} queda libre.`,'ok');
+}
+/* esquinas: el mismo vendedor tiene huecos en dos lados (vertical y horizontal); alterna entre ellos */
+function flipTarget(z){
+    const mine = slotsOf(z).map(o => o.t);
+    const all = Array.from(new Set(mine.concat(String(z.dataset.also || '').split(',').filter(Boolean), cornerMates(mine))));
+    const taken = takenTables(z);
+    const runs = runsOf(all).filter(r => !r.some(o => mine.includes(o.t)) && !r.some(o => taken.has(o.t)));
+    return runs.length ? { run: runs.sort((a, b) => b.length - a.length)[0], all } : null;
+}
+function flipCorner(){
+    if (!sel) return;
+    const f = flipTarget(sel);
+    if (!f) return msg('No hay otro lado libre para este vendedor.','err');
+    snap();
+    fitToTables(sel, f.run);
+    sel.dataset.also = f.all.filter(t => !f.run.some(o => o.t === t)).join(',');
+    render(sel); select(sel); refreshList();
+}
+function confirmProp(){
+    if (!sel) return;
+    snap(); delete sel.dataset.prop; render(sel); select(sel); refreshList();
+}
+
+/* ================= COLISIONES ================= */
+function rectOf(z){ return { l:pct(z.style.left), t:pct(z.style.top), w:pct(z.style.width), h:pct(z.style.height) }; }
+function overlap(a, b){
+    const e = 0.002;   /* tocarse está bien; montarse no */
+    return a.l < b.l + b.w - e && b.l < a.l + a.w - e && a.t < b.t + b.h - e && b.t < a.t + a.h - e;
+}
+function collisions(z, r){
+    const out = [];
+    const ghost = z.dataset.invisible === 'true';
+    zones().forEach(o => {
+        if (o === z || (ghost && o.dataset.invisible === 'true')) return;   /* dos marcas impresas pueden solaparse */
+        if (overlap(r, rectOf(o))) out.push('«' + (o.dataset.name || 'otro seller') + '»');
+    });
+    if (z.dataset.invisible !== 'true')
+        mesasRects.forEach(m => { if (overlap(r, m.r)) out.push('la mesa ' + m.id); });
+    return out;
+}
+function markClashes(){
+    zones().forEach(z => z.classList.toggle('clash', collisions(z, rectOf(z)).length > 0));
+}
+
+/* ================= LOGOS: compresión ================= */
+/* los logos de Shopify se piden ya reducidos también en el builder */
+function previewSrc(url){
+    if (!/^https:\/\/cdn\.shopify\.com\//.test(url) || /[?&]width=/.test(url)) return url;
+    return url + (url.includes('?') ? '&' : '?') + 'width=400';
+}
+function kb(n){ return (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB'; }
+function showLogoField(z){
+    const inp = document.getElementById('p-logo');
+    const lg = z.dataset.logo || '';
+    inp.value = lg.startsWith('data:') ? '' : lg;
+    inp.placeholder = lg.startsWith('data:') ? 'Imagen subida y comprimida (ver abajo)' : 'https://… o sube / arrastra una imagen';
+    showLogoInfo(z);
+}
+function showLogoInfo(z){
+    const el = document.getElementById('p-logo-info');
+    const lg = z.dataset.logo || '';
+    if (lg.startsWith('data:')) el.innerHTML = `<b>Imagen comprimida:</b> ${kb(Math.round(lg.length * 0.75))} (${esc(lg.slice(5, lg.indexOf(';')))}).`;
+    else if (/cdn\.shopify\.com/.test(lg)) el.innerHTML = 'Logo de Shopify: el mapa lo pide ya reducido al tamaño del hueco.';
+    else if (lg) el.innerHTML = 'URL externa: se carga tal cual. Si pesa mucho, mejor súbela aquí como imagen (se comprime).';
+    else el.textContent = 'También puedes arrastrar la imagen encima del seller. Se reduce al tamaño que se verá y se guarda comprimida (WebP).';
+}
+async function compressImage(file, maxSide){
+    const url = URL.createObjectURL(file);
+    try {
+        const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+        const W = img.naturalWidth || 512, H = img.naturalHeight || 512;
+        const k = Math.min(1, maxSide / Math.max(W, H));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(W * k)); c.height = Math.max(1, Math.round(H * k));
+        const g = c.getContext('2d');
+        g.imageSmoothingQuality = 'high';
+        g.drawImage(img, 0, 0, c.width, c.height);
+        let q = 0.86, out = c.toDataURL('image/webp', q);
+        if (!out.startsWith('data:image/webp')) out = c.toDataURL('image/png');
+        while (out.startsWith('data:image/webp') && out.length > 48000 && q > 0.45){ q -= 0.12; out = c.toDataURL('image/webp', q); }
+        return { data: out, w: c.width, h: c.height, from: file.size };
+    } finally { URL.revokeObjectURL(url); }
+}
+async function logoFromFile(file, target){
+    const z = target || sel;
+    if (!z || !file) return;
+    if (!/^image\//.test(file.type)) return msg('Eso no es una imagen.','err');
+    /* lo que se va a ver como mucho: el hueco a zoom máximo en pantalla retina */
+    const side = Math.max(pct(z.style.width) / 100 * mapImg.naturalWidth, pct(z.style.height) / 100 * mapImg.naturalHeight);
+    const maxSide = Math.max(160, Math.min(480, Math.round(side * 1.6)));
+    try {
+        const r = await compressImage(file, maxSide);
+        snap();
+        z.dataset.logo = r.data; render(z);
+        if (z === sel) showLogoField(z);
+        refreshList();
+        msg(`Logo comprimido: ${kb(file.size)} → ${kb(r.data.length * 0.75)} (${r.w}×${r.h}).`,'ok');
+    } catch(e){ msg('No he podido leer la imagen.','err'); }
+}
+function clearLogo(){
+    if (!sel) return;
+    snap(); sel.dataset.logo = ''; render(sel); showLogoField(sel); refreshList();
+}
+/* arrastrar una imagen desde el ordenador encima de un seller */
+viewport.addEventListener('dragover', e => { if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) e.preventDefault(); });
+viewport.addEventListener('drop', e => {
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!f) return;
+    e.preventDefault();
+    const z = e.target.closest && e.target.closest('.zone');
+    if (!z) return msg('Suelta la imagen encima de un seller.','err');
+    select(z); logoFromFile(f, z);
+});
+
+/* ================= PROPUESTA DE VENDORS ================= */
+function loadProposalFile(file){
+    if (!file) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+        try { applyProposal(JSON.parse(rd.result)); }
+        catch(e){ msg('El fichero no es una propuesta válida (JSON).','err'); }
+    };
+    rd.readAsText(file);
+}
+const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+function applyProposal(d){
+    const hallNum = (C.hallName.match(/\d+/) || [''])[0];
+    if (d.hall && String(d.hall) !== hallNum)
+        return msg(`Esta propuesta es del pabellón ${d.hall} y este builder es el ${hallNum}.`,'err');
+    const list = Array.isArray(d) ? d : (d.vendors || []);
+    snap();
+    /* fuera lo que viniera de una propuesta anterior sin revisar */
+    zones().filter(z => z.dataset.prop === '1').forEach(z => z.remove());
+    PROP = list.map(v => Object.assign({}, v, { tables: v.tables || [] }));
+    let placed = 0;
+    PROP.forEach(v => {
+        v._st = v.status || 'ok'; v._why = '';
+        if (v._st !== 'ok') return;
+        const run = bestRun(v.tables);
+        if (!run.length){ v._st = 'no-slot'; v._why = 'Sus mesas no tienen hueco de logo (no son commercial o no existen en el plano).'; return; }
+        /* ¿ya está en seller.html? */
+        const taken = takenTables();
+        const mine = run.map(o => o.t).filter(t => taken.has(t));
+        if (mine.length){
+            const z = taken.get(mine[0]);
+            if (norm(z.dataset.name) === norm(v.name)){ v._st = 'done'; return; }
+            v._st = 'clash'; v._why = `${mine.join(', ')} ya tiene a «${z.dataset.name || 'otro seller'}».`; return;
+        }
+        const z = makeZone({ name:v.name, logo:v.logo, ig:v.ig, web:v.web, vid:v.id, prop:true });
+        capa.appendChild(z); fitToTables(z, run);
+        z.dataset.also = v.tables.concat(cornerMates(v.tables)).filter((t, i, a) => a.indexOf(t) === i && !run.some(o => o.t === t)).join(',');
+        render(z); placed++;
+        v._st = (v.conflicts && v.conflicts.length) ? 'warn' : (v.consent === null ? 'ask' : 'placed');
+    });
+    select(null); refreshList();
+    msg(`Propuesta cargada: ${placed} vendedores colocados. Revisa los de borde naranja.`,'ok');
+}
+const PV_SECTIONS = [
+    ['placed',     'Colocados',                          'ok'],
+    ['warn',       'Colocados, pero la mesa la reclama otro pedido', 'warn'],
+    ['ask',        'Colocados, pero sin respuesta sobre salir en el mapa: confirmar', 'warn'],
+    ['done',       'Ya estaban en seller.html',          'ok'],
+    ['clash',      'Su hueco ya lo ocupa otro seller',   'bad'],
+    ['no-table',   'Sin mesa: colócalos a mano', 'warn'],
+    ['no-slot',    'Sin hueco de logo',                  ''],
+    ['collector',  'Collector (sin hueco de logo)',      ''],
+    ['no-consent', 'No quieren salir en el mapa',        '']
+];
+function renderReport(){
+    const box = document.getElementById('pv-report');
+    if (!PROP){ box.innerHTML = ''; return; }
+    /* estado vivo: si alguien de «sin mesa» o «conflicto» ya tiene seller, pasa a colocado */
+    PROP.forEach(v => {
+        if (['no-table','clash','no-slot'].includes(v._st) && zones().some(z => z.dataset.vid === v.id)) v._st = 'placed';
+        if (v._st === 'placed' || v._st === 'warn' || v._st === 'ask'){
+            if (!zones().some(z => z.dataset.vid === v.id)) v._st = v.tables.length ? 'clash' : 'no-table';
+        }
+    });
+    document.getElementById('pv-count').textContent = PROP.length + ' vendedores';
+    const by = {}; PROP.forEach(v => (by[v._st] = by[v._st] || []).push(v));
+    const chips = PV_SECTIONS.filter(([k]) => by[k]).map(([k, t, c]) => `<span class="pv-chip ${c}">${by[k].length} · ${t.split(':')[0]}</span>`).join('');
+    const icons = v => [v.logo ? '' : 'sin logo', v.ig ? '' : 'sin IG', v.web ? '' : 'sin web'].filter(Boolean).join(' · ');
+    const secs = PV_SECTIONS.filter(([k]) => by[k]).map(([k, t]) => {
+        const open = ['warn','ask','clash','no-table'].includes(k) ? ' open' : '';
+        return `<details class="pv-sec"${open}><summary>${t} (${by[k].length})</summary><div class="pv-list">${
+            by[k].map(v => `<div class="pv-item" onclick="pvClick('${esc(v.id)}')" title="${esc(v.note || '')}">${esc(v.name)}
+                <small>${esc((v.tables || []).map(t => t.split('-').slice(1).join('')).join(' · ') || 'sin mesa')}${v.orders ? ' · ' + esc(v.orders.join(' ')) : ''}${icons(v) ? ' · ' + icons(v) : ''}${v._why ? '<br>' + esc(v._why) : ''}${v.note ? '<br>' + esc(v.note) : ''}</small></div>`).join('')
+        }</div></details>`;
+    }).join('');
+    box.innerHTML = `<div class="pv-sum">${chips}</div>${secs}`;
+}
+function pvClick(id){
+    const v = PROP && PROP.find(x => x.id === id);
+    if (!v) return;
+    const z = zones().find(z => z.dataset.vid === id);
+    if (z){ const i = zones().indexOf(z); pickIndex(i); return; }
+    if (['collector','no-consent'].includes(v._st) && !confirm(`${v.name}: ${v._st === 'collector' ? 'es collector' : 'dijo que NO quiere salir en el mapa'}. ¿Colocarlo igualmente?`)) return;
+    startPlacing(v);
+}
+function startPlacing(v){
+    placing = v;
+    document.body.classList.add('placing');
+    const b = document.getElementById('placing');
+    b.innerHTML = `Colocando <b>${esc(v.name)}</b>${v.tables.length ? ' (' + esc(v.tables.map(t => t.split('-').slice(1).join('')).join(' · ')) + ')' : ''} · clic en el hueco de su mesa · Esc cancela`;
+    b.classList.add('on');
+    if (!tslotsOn) toggleTSlots();
+    updateTSlots();
+    /* llevar la vista a su primera mesa con hueco */
+    const o = v.tables.map(t => TS_BY.get(t)).find(Boolean);
+    if (o){
+        const mr = mapImg.getBoundingClientRect(), vr = viewport.getBoundingClientRect();
+        const x = (mr.left - vr.left + viewport.scrollLeft) + (o.l + o.wp/2)/100*mr.width;
+        const y = (mr.top - vr.top + viewport.scrollTop) + (o.tp + o.hp/2)/100*mr.height;
+        const fx = 350 + (viewport.clientWidth - 350 - 330)/2, fy = (viewport.clientHeight - 130)/2;
+        viewport.scrollTo({left:Math.max(0,x-fx), top:Math.max(0,y-fy), behavior:'smooth'});
+    }
+}
+function stopPlacing(){
+    placing = null;
+    document.body.classList.remove('placing');
+    document.getElementById('placing').classList.remove('on');
+    updateTSlots(); if (PROP) renderReport();
+}
+
 updateBar();
 refreshList();
 </script>

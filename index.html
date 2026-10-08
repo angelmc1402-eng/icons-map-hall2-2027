@@ -223,7 +223,7 @@ body.lvl-0:not(.no-loupe) .sponsor-zone{pointer-events:none}
 <div class="tip" id="tip-mesa"></div>
 <div class="tip" id="tip-seller"></div>
 
-<script src="config.js?v=20261006d"></script>
+<script src="config.js?v=20261008"></script>
 <script>
 window.addEventListener('dragstart', e => e.preventDefault());
 const C = window.ICONS_CONFIG;
@@ -569,6 +569,15 @@ async function cargarSellers(){
     });
     new Image().src = IG_ICON;
     capaSell.querySelectorAll('img').forEach(im => { if (im.decode) im.decode().catch(() => {}); });
+    /* logos junto a mesa: al pasar por el logo se iluminan sus mesas, y la ficha de la mesa dice de quién es */
+    capaSell.querySelectorAll('.sponsor-zone').forEach(sp => {
+        const ids = ((sp.dataset.tables || '') + ',' + (sp.dataset.also || '')).split(',').map(x => x.trim()).filter(Boolean);
+        if (!ids.length) return;
+        const ms = ids.map(id => dict.get(id)).filter(Boolean);
+        ms.forEach(m => { if (!m.dataset.seller) m.dataset.seller = sp.dataset.name || ''; });
+        sp.addEventListener('pointerenter', () => ms.forEach(m => m.classList.add('active')));
+        sp.addEventListener('pointerleave', () => ms.forEach(m => m.classList.remove('active')));
+    });
     /* recuento de clics: un solo listener para toda la ficha */
     tipSeller.addEventListener('click', e => {
         const a = e.target.closest('a[data-track]');

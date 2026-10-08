@@ -2,6 +2,7 @@
    Va pegado en el Apps Script de la hoja «ICONS 2027 · Clics sponsors» (Extensiones → Apps Script).
    Es el mismo para los dos pabellones: cada clic trae su pabellón.
 
+   0. Tras pegar el código, recarga la hoja: aparece el menú «ICONS» (Rehacer Panel / Borrar clics).
    1. Ejecuta setup() (crea/rehace las pestañas Resumen y Panel con sus fórmulas, gráficos y formato).
       Se puede volver a ejecutar cuando se quiera: NO borra los clics.
    2. Implementar → Nueva implementación → Aplicación web · Ejecutar como: yo · Acceso: cualquier usuario.
@@ -84,6 +85,32 @@ const R = {
   P: 'Clics!$E$2:$E', D: 'Clics!$F$2:$F', L: 'Clics!$G$2:$G'
 };
 function x_(s) { return s.replace(/\{(\w)\}/g, (m, k) => R[k]); }
+
+/* ---------------- menú ICONS en la hoja ---------------- */
+
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('ICONS')
+    .addItem('Rehacer Panel y Resumen', 'setup')
+    .addSeparator()
+    .addItem('Borrar todos los clics (empezar de cero)…', 'borrarClics')
+    .addToUi();
+}
+
+/* Deja Clics vacía (solo la cabecera). Para quitar las pruebas antes de abrir el mapa al público.
+   No deja rastro: Panel y Resumen vuelven a cero solos. Pide confirmación. */
+function borrarClics() {
+  const ui = SpreadsheetApp.getUi();
+  const c = hoja('Clics');
+  const n = Math.max(0, c.getLastRow() - 1);
+  if (!n) { ui.alert('Clics ya está vacía.'); return; }
+  const r = ui.alert('Borrar ' + n + ' clics', 'Se borran TODOS los clics registrados y no se pueden recuperar. ¿Seguro?',
+                     ui.ButtonSet.YES_NO);
+  if (r !== ui.Button.YES) return;
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try { c.getRange(2, 1, n, 7).clearContent(); } finally { lock.releaseLock(); }
+  ui.alert('Listo: Clics vacía. Los clics nuevos empiezan a contar desde ahora.');
+}
 
 /* ---------------- setup ---------------- */
 
@@ -186,7 +213,7 @@ function panel_(sep) {
     ['A webs', '=COUNTIFS({P}, "map", {T}, "web")', '#,##0', COL.web],
     ['A Instagram', '=COUNTIFS({P}, "map", {T}, "instagram")', '#,##0', COL.ig],
     ['Desde móvil', '=IFERROR(COUNTIFS({P}, "map", {D}, "mobile") / COUNTIFS({P}, "map"), 0)', '0%', COL.ink],
-    ['Sponsors con clics', '=IFERROR(COUNTA(UNIQUE(FILTER({S}, {P}="map"))), 0)', '0', COL.purple],
+    ['Sponsors con clics', '=IFERROR(ROWS(UNIQUE(FILTER({S}, {P}="map"))), 0)', '0', COL.purple],
     ['Último clic', '=IFERROR(MAX(FILTER({F}, {P}="map")), "—")', 'dd/mm hh:mm', COL.ink]
   ];
   tarjetas.forEach((t, i) => {
@@ -218,7 +245,7 @@ function panel_(sep) {
   dia('D', 'B10:B + C10:C');
   dia('E', 'COUNTIFS(' + enDia + ', {D}, "mobile")');
   dia('F', 'COUNTIFS(' + enDia + ', {D}, "desktop")');
-  F('G10').setFormula(f_(x_('=MAP(A10:A60, LAMBDA(d, IF(d="",, IFERROR(COUNTA(UNIQUE(FILTER({S}, INT({F})=d, {P}="map"))), 0))))'), sep));
+  F('G10').setFormula(f_(x_('=MAP(A10:A60, LAMBDA(d, IF(d="",, IFERROR(ROWS(UNIQUE(FILTER({S}, INT({F})=d, {P}="map"))), 0))))'), sep));
   F('A10:A').setNumberFormat('ddd dd/mm/yyyy');
   F('B10:G').setHorizontalAlignment('center');
   F('B10:B').setFontColor(COL.web); F('C10:C').setFontColor(COL.ig); F('D10:D').setFontWeight('bold');
@@ -229,8 +256,12 @@ function panel_(sep) {
   F('I9:J9').setValues([['Hora', 'Clics']]);
   cabecera('I9:J9');
   F('I10').setFormula(f_('=ARRAYFORMULA(TEXT(SEQUENCE(24, 1, 0), "00") & ":00")', sep));
-  set('J10', '=MAP(SEQUENCE(24, 1, 0), LAMBDA(h, IFERROR(COUNTA(FILTER({F}, HOUR({F})=h, {P}="map", {F}<>"")), 0)))');
+  set('J10', '=MAP(SEQUENCE(24, 1, 0), LAMBDA(h, SUMPRODUCT(({F}<>"") * (HOUR({F})=h) * ({P}="map"))))');
   F('I10:J33').setHorizontalAlignment('center');
+  const calor = rango => SpreadsheetApp.newConditionalFormatRule()
+    .setGradientMinpointWithValue('#ffffff', SpreadsheetApp.InterpolationType.NUMBER, '0')
+    .setGradientMaxpoint('#c4b5fd').setRanges([rango]).build();   /* lila claro: el número se sigue leyendo */
+  p.setConditionalFormatRules([calor(F('J10:J33')), calor(F('D10:D60'))]);
 
   /* POR PABELLÓN (L:M) e IDIOMA (L:M más abajo) */
   titulo('L8', 'Por pabellón');
@@ -272,10 +303,9 @@ function panel_(sep) {
   };
   /* donuts con porcentajes: un dato de un vistazo */
   const donut = (rangos, col, titulo, colores, fila) => graf(rangos, Charts.ChartType.PIE, fila || 36, col, titulo, {
-    pieHole: 0.55, pieSliceText: 'percentage', colors: colores, width: 380, height: 280,
-    legend: { position: 'right', textStyle: { color: COL.ink2, fontSize: 11 } },
-    pieSliceTextStyle: { color: '#ffffff', fontSize: 12, bold: true },
-    pieSliceBorderColor: '#ffffff', chartArea: { left: 10, top: 40, width: '90%', height: '80%' }
+    /* solo opciones que los gráficos de Sheets entienden: otras (chartArea, textStyle…) los dejan en blanco */
+    pieHole: 0.5, pieSliceText: 'percentage', colors: colores, width: 380, height: 280,
+    legend: { position: 'right' }
   });
   donut([F('O9:P11')], 1, 'Web vs Instagram', [COL.web, COL.ig]);
   donut([F('O13:P15')], 5, 'Móvil vs escritorio', [COL.purple, COL.ink3]);
