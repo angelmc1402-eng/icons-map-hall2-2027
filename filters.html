@@ -70,7 +70,7 @@ body.zoom-1 .sponsor-zone{pointer-events:none}
    el hover se dibuja hacia dentro, así nunca se sale del marco */
 .sponsor-logo-box{width:100%;height:100%;box-sizing:border-box;background:#fff;border-radius:inherit;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:9%;box-shadow:inset 0 0 0 1.5px rgba(0,133,124,.9)}
 /* invisible: el logo ya está impreso en el plano; solo hover + ficha */
-.sponsor-zone.ghost .sponsor-logo-box{background:transparent;box-shadow:none;padding:0}
+.sponsor-zone.ghost .sponsor-logo-box{...;padding:9%}
 .sponsor-zone.ghost::after{box-shadow:inset 0 0 0 2.5px var(--seller);background:rgba(124,58,237,.06)}
 .sponsor-logo-box img{width:100%;height:100%;object-fit:contain}
 .sponsor-logo-box.multi-logo{display:grid;gap:3px;align-items:stretch;justify-items:stretch}
