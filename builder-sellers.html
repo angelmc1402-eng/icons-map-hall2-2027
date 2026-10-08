@@ -1117,12 +1117,18 @@ function clickTSlot(o){
     snap();
     if (placing){
         const v = placing;
-        const run = bestRun(v.tables.includes(o.t) ? v.tables : [o.t], o);
-        const z = makeZone({ name:v.name, logo:v.logo, ig:v.ig, web:v.web, vid:v.id, prop:true });
-        capa.appendChild(z); fitToTables(z, run);
-        z.dataset.also = v.tables.concat(cornerMates(v.tables)).filter(t => !run.some(r => r.t === t))
-            .filter((t, i, a) => a.indexOf(t) === i).join(',');
-        render(z); stopPlacing(); select(z);
+        const ids = v.tables.includes(o.t) ? v.tables : [o.t];
+        const run = bestRun(ids, o);
+        const runs = [run].concat(runsOf(ids).filter(r => !r.includes(o) && !r.some(x => taken.has(x.t))));
+        let z;
+        runs.forEach((rn, i) => {
+            const zz = makeZone({ name:v.name, logo:v.logo, ig:v.ig, web:v.web, vid:v.id, prop:true });
+            capa.appendChild(zz); fitToTables(zz, rn);
+            zz.dataset.also = ids.concat(cornerMates(ids)).filter(t => !rn.some(r => r.t === t))
+                .filter((t, i, a) => a.indexOf(t) === i).join(',');
+            render(zz); if (!i) z = zz;
+        });
+        stopPlacing(); select(z);
         msg(`${v.name} colocado en ${tablesLabel(z.dataset.tables)}.`,'ok');
         return;
     }
@@ -1355,20 +1361,24 @@ function applyProposal(d){
     PROP.forEach(v => {
         v._st = v.status || 'ok'; v._why = '';
         if (v._st !== 'ok') return;
-        const run = bestRun(v.tables);
-        if (!run.length){ v._st = 'no-slot'; v._why = 'Sus mesas no tienen hueco de logo (no son commercial o no existen en el plano).'; return; }
-        /* ¿ya está en seller.html? */
+        /* todos los tramos de sus mesas: el más largo primero; los lados de una esquina
+           o los bloques separados llevan su propio logo (mismo vendedor) */
+        const runs = runsOf(v.tables).sort((a, b) => b.length - a.length || (VERT(b[0].sd) - VERT(a[0].sd)));
+        if (!runs.length){ v._st = 'no-slot'; v._why = 'Sus mesas no tienen hueco de logo (no son commercial o no existen en el plano).'; return; }
         const taken = takenTables();
-        const mine = run.map(o => o.t).filter(t => taken.has(t));
+        const mine = runs.flat().map(o => o.t).filter(t => taken.has(t));
         if (mine.length){
             const z = taken.get(mine[0]);
             if (norm(z.dataset.name) === norm(v.name)){ v._st = 'done'; return; }
             v._st = 'clash'; v._why = `${mine.join(', ')} ya tiene a «${z.dataset.name || 'otro seller'}».`; return;
         }
-        const z = makeZone({ name:v.name, logo:v.logo, ig:v.ig, web:v.web, vid:v.id, prop:true });
-        capa.appendChild(z); fitToTables(z, run);
-        z.dataset.also = v.tables.concat(cornerMates(v.tables)).filter((t, i, a) => a.indexOf(t) === i && !run.some(o => o.t === t)).join(',');
-        render(z); placed++;
+        runs.forEach(run => {
+            const z = makeZone({ name:v.name, logo:v.logo, ig:v.ig, web:v.web, vid:v.id, prop:true });
+            capa.appendChild(z); fitToTables(z, run);
+            z.dataset.also = v.tables.concat(cornerMates(v.tables)).filter((t, i, a) => a.indexOf(t) === i && !run.some(o => o.t === t)).join(',');
+            render(z);
+        });
+        placed++;
         v._st = (v.conflicts && v.conflicts.length) ? 'warn' : (v.consent === null ? 'ask' : 'placed');
     });
     select(null); refreshList();
